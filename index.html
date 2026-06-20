@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#211d19">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="星灯りRPG">
+    <title>星灯りのハーレム開拓記 - 放置型ハクスラRPG</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="assets/app-icon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <div class="game-shell">
+      <header class="topbar" id="topbar"></header>
+
+      <main class="dashboard">
+        <aside class="left-column">
+          <section class="panel hero-panel" id="heroPanel"></section>
+          <section class="panel roster-panel" id="rosterPanel"></section>
+        </aside>
+
+        <section class="center-column">
+          <section class="panel map-panel" id="mapPanel"></section>
+          <section class="panel location-panel" id="locationPanel"></section>
+          <section class="panel story-panel" id="storyPanel"></section>
+          <section class="panel jobs-panel" id="jobsPanel"></section>
+        </section>
+
+        <aside class="right-column">
+          <section class="panel resources-panel" id="resourcesPanel"></section>
+          <section class="panel account-panel" id="accountPanel"></section>
+          <section class="panel log-panel" id="logPanel"></section>
+        </aside>
+      </main>
+    </div>
+
+    <script src="firebase-config.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
