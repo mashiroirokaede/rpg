@@ -23,6 +23,10 @@
   box-sizing: border-box;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 html,
 body {
   min-height: 100%;
@@ -155,6 +159,25 @@ select {
   grid-template-columns: repeat(3, minmax(64px, 1fr));
   gap: 8px;
   padding: 9px;
+}
+
+.main-menu {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: 8px;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(33, 29, 25, 0.94);
+  box-shadow: var(--shadow);
+}
+
+.main-menu button.active {
+  border-color: var(--gold);
+  background: #47351f;
+  color: #fff4d4;
+  font-weight: 800;
 }
 
 .dashboard {
@@ -929,6 +952,361 @@ select {
   border-color: rgba(215, 167, 77, 0.55);
 }
 
+.base-summary,
+.inventory-box {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #18140f;
+  padding: 12px;
+}
+
+.base-summary {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) minmax(180px, 0.7fr);
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.base-summary span,
+.card-kicker,
+.recipe-cost,
+.inventory-row span {
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.base-summary strong {
+  display: block;
+  margin-top: 2px;
+  color: var(--paper);
+  font-size: 1.1rem;
+}
+
+.base-summary p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.base-grid,
+.craft-grid,
+.quest-grid,
+.boss-grid,
+.ability-grid,
+.set-grid,
+.facility-grid,
+.rebirth-grid,
+.skill-tree-grid,
+.expedition-grid,
+.guild-grid,
+.buyback-grid,
+.guild-request-grid,
+.codex-grid,
+.achievement-grid,
+.familiar-grid,
+.market-grid,
+.shop-stock-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.base-card,
+.recipe-card,
+.quest-card,
+.boss-card,
+.ability-card,
+.set-card,
+.facility-card,
+.rebirth-card,
+.skill-node-card,
+.battle-card,
+.expedition-card,
+.guild-card,
+.buyback-card,
+.guild-request-card,
+.codex-card,
+.achievement-card,
+.heroine-relic,
+.familiar-card,
+.market-card,
+.shop-stock-card {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #1a1612;
+  padding: 11px;
+}
+
+.quest-grid {
+  margin-bottom: 14px;
+}
+
+.base-card.active {
+  border-color: var(--gold);
+  background:
+    linear-gradient(135deg, rgba(215, 167, 77, 0.14), transparent 44%),
+    #211910;
+}
+
+.quest-card.ready,
+.boss-card.ready,
+.ability-card.active,
+.set-card.active,
+.facility-card.active,
+.rebirth-card.ready,
+.skill-node-card.active,
+.battle-card.active,
+.expedition-card.active,
+.guild-card.active,
+.guild-request-card.ready,
+.market-card.active,
+.codex-card.active,
+.achievement-card.active,
+.heroine-relic.active {
+  border-color: rgba(105, 183, 122, 0.58);
+  background:
+    linear-gradient(135deg, rgba(105, 183, 122, 0.12), transparent 45%),
+    #182016;
+}
+
+.quest-card.done {
+  opacity: 0.72;
+}
+
+.base-card h3,
+.recipe-card h3,
+.quest-card h3,
+.boss-card h3,
+.ability-card h3,
+.set-card h3,
+.facility-card h3,
+.rebirth-card h3,
+.skill-node-card h3,
+.battle-card h3,
+.expedition-card h3,
+.guild-card h3,
+.buyback-card h3,
+.guild-request-card h3,
+.codex-card h3,
+.achievement-card h3,
+.familiar-card h3,
+.market-card h3,
+.shop-stock-card h3,
+.section-label {
+  margin: 0;
+  color: var(--paper);
+}
+
+.base-card p,
+.recipe-card p,
+.quest-card p,
+.boss-card p,
+.ability-card p,
+.set-card p,
+.facility-card p,
+.rebirth-card p,
+.skill-node-card p,
+.battle-card p,
+.expedition-card p,
+.guild-card p,
+.buyback-card p,
+.guild-request-card p,
+.codex-card p,
+.achievement-card p,
+.heroine-relic p,
+.familiar-card p,
+.market-card p,
+.shop-stock-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.ability-grid,
+.facility-grid,
+.rebirth-grid,
+.skill-tree-grid,
+.expedition-grid,
+.guild-grid,
+.buyback-grid,
+.guild-request-grid,
+.codex-grid,
+.achievement-grid,
+.familiar-grid,
+.market-grid,
+.shop-stock-grid {
+  margin-bottom: 14px;
+}
+
+.quest-reward,
+.boss-meta {
+  color: #f0d28a;
+  font-size: 0.78rem;
+}
+
+.boss-section {
+  margin-top: 12px;
+}
+
+.rebirth-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.skill-node-card.locked {
+  opacity: 0.72;
+}
+
+.expedition-card.locked,
+.guild-request-card.locked,
+.codex-card.locked,
+.achievement-card.locked {
+  opacity: 0.68;
+}
+
+.guild-request-card.done {
+  opacity: 0.72;
+}
+
+.expedition-targets {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.expedition-targets button {
+  min-height: 32px;
+  padding: 0 8px;
+  font-size: 0.74rem;
+}
+
+.expedition-targets button.active {
+  border-color: var(--gold);
+  background: #47351f;
+  color: #fff4d4;
+}
+
+.heroine-relic {
+  border-left: 3px solid #d98aa6;
+  background:
+    linear-gradient(135deg, rgba(217, 138, 166, 0.09), transparent 45%),
+    #1a1612;
+}
+
+.heroine-relic strong,
+.heroine-skill span {
+  color: var(--paper);
+}
+
+.heroine-skill {
+  display: grid;
+  gap: 6px;
+}
+
+.market-card {
+  border-left: 3px solid var(--rarity-color, var(--gold));
+}
+
+.shop-management {
+  display: grid;
+  gap: 10px;
+}
+
+.shop-actions,
+.shop-stock-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.shop-stock-actions button {
+  min-height: 34px;
+  padding: 0 8px;
+  font-size: 0.76rem;
+}
+
+.familiar-card {
+  background:
+    linear-gradient(135deg, rgba(105, 183, 122, 0.1), transparent 45%),
+    #1a1612;
+}
+
+.battle-card {
+  background:
+    linear-gradient(135deg, rgba(103, 148, 190, 0.1), transparent 46%),
+    #171512;
+}
+
+.battle-hp {
+  display: grid;
+  gap: 6px;
+  color: #f0d28a;
+  font-size: 0.78rem;
+}
+
+.craft-layout {
+  display: grid;
+  grid-template-columns: minmax(420px, 1fr) minmax(240px, 0.38fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.section-label {
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+}
+
+.recipe-card {
+  border-color: color-mix(in srgb, var(--rarity-color), var(--line) 55%);
+}
+
+.recipe-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.rarity-pill {
+  flex: 0 0 auto;
+  border: 1px solid color-mix(in srgb, var(--rarity-color), #fff 18%);
+  border-radius: 999px;
+  padding: 3px 8px;
+  color: var(--rarity-color);
+  background: color-mix(in srgb, var(--rarity-color), transparent 88%);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.inventory-list {
+  display: grid;
+  gap: 8px;
+}
+
+.inventory-row {
+  border-left: 3px solid var(--rarity-color);
+  border-radius: 6px;
+  background: #211b15;
+  padding: 8px 10px;
+}
+
+.inventory-row strong,
+.inventory-row span {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.inventory-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: 7px;
+}
+
 .map-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(112px, 1fr));
@@ -1271,6 +1649,78 @@ select {
   overflow-wrap: anywhere;
 }
 
+.daily-card {
+  display: grid;
+  grid-template-columns: 1fr minmax(112px, auto);
+  gap: 10px;
+  align-items: center;
+  padding: 11px;
+  border: 1px solid rgba(215, 167, 77, 0.48);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(215, 167, 77, 0.16), transparent 42%),
+    #181410;
+}
+
+.daily-card span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.daily-card strong {
+  display: block;
+  color: var(--paper);
+  font-size: 1.15rem;
+}
+
+.daily-card.claimed {
+  border-color: var(--line);
+  background: #181410;
+}
+
+.daily-reward {
+  margin: 10px 0;
+  color: #f0d28a;
+  font-size: 0.8rem;
+}
+
+.daily-calendar {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.daily-day {
+  min-height: 42px;
+  display: grid;
+  place-items: center;
+  gap: 1px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #181410;
+  text-align: center;
+}
+
+.daily-day span {
+  color: var(--dim);
+  font-size: 0.66rem;
+}
+
+.daily-day strong {
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.daily-day.active {
+  border-color: var(--gold);
+  background: #372817;
+}
+
+.daily-day.special {
+  border-color: rgba(166, 138, 212, 0.55);
+}
+
 .account-panel {
   display: grid;
   gap: 10px;
@@ -1532,6 +1982,56 @@ select {
   background: #2c2333;
 }
 
+.locked-job {
+  display: grid;
+  gap: 2px;
+  min-height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #17130f;
+  padding: 6px 9px;
+}
+
+.locked-job span {
+  color: var(--dim);
+  font-size: 0.7rem;
+}
+
+.locked-job strong {
+  color: var(--paper);
+  font-size: 0.82rem;
+}
+
+.equipment-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  padding-top: 2px;
+}
+
+.equipment-field {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.equipment-field span,
+.equipment-field small {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.equipment-field select {
+  min-height: 34px;
+  padding: 0 8px;
+  font-size: 0.78rem;
+}
+
+.equipment-field small {
+  min-height: 1.2em;
+  overflow-wrap: anywhere;
+}
+
 .log-list {
   display: grid;
   gap: 8px;
@@ -1592,13 +2092,33 @@ select {
   .topbar,
   .dashboard,
   .right-column,
+  .base-summary,
+  .craft-layout,
   .location-layout,
   .story-layout {
     grid-template-columns: 1fr;
   }
 
   .map-grid,
-  .jobs-grid {
+  .jobs-grid,
+  .base-grid,
+  .craft-grid,
+  .quest-grid,
+  .boss-grid,
+  .ability-grid,
+  .set-grid,
+  .facility-grid,
+  .skill-tree-grid,
+  .expedition-grid,
+  .guild-grid,
+  .buyback-grid,
+  .guild-request-grid,
+  .codex-grid,
+  .achievement-grid,
+  .familiar-grid,
+  .market-grid,
+  .shop-stock-grid,
+  .equipment-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1622,9 +2142,30 @@ select {
 @media (max-width: 520px) {
   .map-grid,
   .jobs-grid,
+  .base-grid,
+  .craft-grid,
+  .quest-grid,
+  .boss-grid,
+  .ability-grid,
+  .set-grid,
+  .facility-grid,
+  .rebirth-grid,
+  .skill-tree-grid,
+  .expedition-grid,
+  .guild-grid,
+  .buyback-grid,
+  .guild-request-grid,
+  .codex-grid,
+  .achievement-grid,
+  .familiar-grid,
+  .market-grid,
+  .shop-stock-grid,
+  .expedition-targets,
+  .equipment-grid,
   .resource-grid,
   .location-actions,
-  .job-tabs {
+  .job-tabs,
+  .main-menu {
     grid-template-columns: 1fr;
   }
 
@@ -1634,9 +2175,17 @@ select {
 
   .account-actions,
   .account-actions.single,
+  .inventory-actions,
+  .shop-actions,
+  .shop-stock-actions,
+  .daily-card,
   .roster-tools,
   .hero-name-row {
     grid-template-columns: 1fr;
+  }
+
+  .daily-calendar {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .panel-title,
