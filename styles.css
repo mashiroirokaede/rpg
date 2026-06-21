@@ -1304,6 +1304,54 @@ select {
   font-size: 0.9rem;
 }
 
+.craft-group-list {
+  display: grid;
+  gap: 16px;
+}
+
+.craft-recipe-section {
+  display: grid;
+  gap: 9px;
+}
+
+.craft-section-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-end;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 8px;
+}
+
+.craft-section-head h3,
+.craft-section-head p {
+  margin: 0;
+}
+
+.craft-section-head h3 {
+  color: var(--paper);
+  font-size: 0.96rem;
+}
+
+.craft-section-head p,
+.craft-section-meta {
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.craft-section-meta {
+  display: grid;
+  gap: 3px;
+  justify-items: end;
+  flex: 0 0 auto;
+  text-align: right;
+}
+
+.craft-section-meta small {
+  color: var(--dim);
+  font-size: 0.72rem;
+}
+
 .recipe-card {
   border-color: color-mix(in srgb, var(--rarity-color), var(--line) 55%);
 }
@@ -1354,18 +1402,54 @@ select {
 
 .map-grid {
   display: grid;
-  grid-template-columns: repeat(10, minmax(112px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
   grid-auto-rows: minmax(104px, auto);
   gap: 10px;
-  overflow-x: auto;
-  padding-bottom: 4px;
+}
+
+.map-region-tabs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.map-region-tabs button {
+  min-height: 36px;
+  padding: 0 8px;
+  font-size: 0.78rem;
+}
+
+.map-region-tabs button.active {
+  border-color: var(--gold);
+  background: #47351f;
+  color: #fff4d4;
+  font-weight: 800;
+}
+
+.map-region-summary {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #1b1713;
+  padding: 10px 12px;
+}
+
+.map-region-summary strong {
+  color: var(--paper);
+}
+
+.map-region-summary span,
+.map-region-summary small {
+  color: var(--muted);
+  font-size: 0.8rem;
 }
 
 .map-node {
   position: relative;
   display: grid;
-  grid-column: var(--map-x);
-  grid-row: var(--map-y);
   align-content: space-between;
   min-height: 104px;
   padding: 10px;
@@ -1488,7 +1572,16 @@ select {
 .danger-row {
   display: flex;
   gap: 3px;
+  align-items: center;
+  flex-wrap: wrap;
   margin-top: 8px;
+}
+
+.danger-row em {
+  margin-left: 4px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-style: normal;
 }
 
 .danger-pip {
@@ -2280,9 +2373,15 @@ select {
   }
 
   .panel-title,
+  .craft-section-head,
   .member-line {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .craft-section-meta {
+    justify-items: start;
+    text-align: left;
   }
 
   .member-level {

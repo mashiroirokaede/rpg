@@ -904,6 +904,22 @@
     LOCATIONS.push(...region.sites);
   }
 
+  const MAP_REGIONS = [
+    {
+      id: "starter",
+      name: "拠点周辺",
+      desc: "最初の街と周辺の草原・森・川・鉱山・遺跡です。",
+      locationIds: ["town", "field", "forest", "river", "mine", "watchtower", "cave"],
+    },
+    ...CITY_REGIONS.map((region) => ({
+      id: region.city.id,
+      name: region.city.name,
+      desc: region.city.tagline,
+      locationIds: [region.city.id, ...region.sites.map((site) => site.id)],
+    })),
+  ];
+  const MAP_REGION_BY_ID = Object.fromEntries(MAP_REGIONS.map((region) => [region.id, region]));
+
   const CRAFT_RECIPES = [
     {
       key: "gear",
@@ -1115,6 +1131,18 @@
   }
 
   CRAFT_RECIPES.push(...MANUAL_CRAFT_RECIPES);
+
+  const CRAFT_RECIPE_GROUPS = [
+    { id: "weapon", name: "武器製作", desc: "剣・弓・鞭など、攻撃用の装備を作ります。" },
+    { id: "armor", name: "防具製作", desc: "鎧やローブなど、防御用の装備を作ります。" },
+    { id: "tool", name: "道具製作", desc: "採取道具や職人道具など、作業用の装備を作ります。" },
+    { id: "accessory", name: "アクセサリー製作", desc: "指輪や護符など、特殊効果のある装備を作ります。" },
+    { id: "forge", name: "鍛冶素材", desc: "装備強化に使う鍛冶素材を加工します。" },
+    { id: "alchemy", name: "錬金・薬品", desc: "ポーションなど、探索を支える薬品を調合します。" },
+    { id: "cooking", name: "料理", desc: "携行食など、放置探索を支える料理を作ります。" },
+    { id: "jewelry", name: "護符・細工", desc: "護符や贈り物など、細かな工芸品を仕上げます。" },
+    { id: "workbench", name: "基礎クラフト", desc: "製作台で扱う基本的なクラフトです。" },
+  ];
 
   const EQUIPMENT_SETS = [
     {
@@ -1729,6 +1757,10 @@
         selectLocation(actionElement.dataset.location);
       }
 
+      if (action === "set-map-region") {
+        setMapRegion(actionElement.dataset.region);
+      }
+
       if (action === "toggle-explore") {
         toggleExplore();
       }
@@ -1997,6 +2029,7 @@
         starseed: 0,
       },
       selectedLocation: "town",
+      mapRegionId: "starter",
       exploring: false,
       progress: 0,
       gatherProgress: 0,
@@ -2129,6 +2162,9 @@
       if (!LOCATION_BY_ID[stateToUse.selectedLocation]) {
         stateToUse.selectedLocation = "town";
         stateToUse.exploring = false;
+      }
+      if (!MAP_REGION_BY_ID[stateToUse.mapRegionId] || !MAP_REGION_BY_ID[stateToUse.mapRegionId].locationIds.includes(stateToUse.selectedLocation)) {
+        stateToUse.mapRegionId = getMapRegionIdForLocation(stateToUse.selectedLocation);
       }
 
       cleanupEquipmentAssignments(stateToUse);
@@ -2705,6 +2741,7 @@
 
     const previous = state.selectedLocation;
     state.selectedLocation = locationId;
+    state.mapRegionId = getMapRegionIdForLocation(locationId);
 
     if (previous !== locationId) {
       state.progress = 0;
@@ -4803,6 +4840,31 @@
     return LOCATION_BY_ID[state.selectedLocation] || LOCATION_BY_ID.town;
   }
 
+  function getMapRegionIdForLocation(locationId) {
+    const region = MAP_REGIONS.find((candidate) => candidate.locationIds.includes(locationId));
+    return region?.id || "starter";
+  }
+
+  function getActiveMapRegion() {
+    const region = MAP_REGION_BY_ID[state.mapRegionId] || MAP_REGION_BY_ID[getMapRegionIdForLocation(state.selectedLocation)] || MAP_REGIONS[0];
+    state.mapRegionId = region.id;
+    return region;
+  }
+
+  function setMapRegion(regionId) {
+    const region = MAP_REGION_BY_ID[regionId];
+    if (!region) {
+      return;
+    }
+    state.mapRegionId = region.id;
+    if (!region.locationIds.includes(state.selectedLocation)) {
+      selectLocation(region.locationIds[0] || "town");
+      return;
+    }
+    saveState(false);
+    renderAll();
+  }
+
   function getCurrentBase() {
     state.base = normalizeBase(state.base);
     return BASE_BY_ID[state.base.homeId] || BASE_BY_ID.inn;
@@ -5547,15 +5609,21 @@
   }
 
   function renderMap() {
-    const nodes = LOCATIONS.map((location) => {
+    const activeRegion = getActiveMapRegion();
+    const regionLocations = activeRegion.locationIds.map((id) => LOCATION_BY_ID[id]).filter(Boolean);
+    const regionTabs = MAP_REGIONS.map((region) => {
+      const active = region.id === activeRegion.id ? "active" : "";
+      return `<button type="button" class="${active}" data-action="set-map-region" data-region="${escapeAttr(region.id)}">${escapeHtml(region.name)}</button>`;
+    }).join("");
+    const nodes = regionLocations.map((location) => {
       const selected = location.id === state.selectedLocation ? "selected" : "";
       const pips = Array.from({ length: 5 }, (_, index) => `<i class="danger-pip ${index < location.danger ? "on" : ""}"></i>`).join("");
+      const status = location.danger <= 0 ? "都市" : `危険度 ${location.danger}`;
 
       return `
         <button
           type="button"
           class="map-node ${escapeAttr(location.tone)} ${selected}"
-          style="--map-x: ${location.x}; --map-y: ${location.y};"
           data-action="select-location"
           data-location="${escapeAttr(location.id)}"
         >
@@ -5563,7 +5631,7 @@
             <b>${escapeHtml(location.name)}</b>
             <span>${escapeHtml(location.tagline)}</span>
           </span>
-          <span class="danger-row" aria-label="危険度${location.danger}">${pips}</span>
+          <span class="danger-row" aria-label="${escapeAttr(status)}">${pips}<em>${escapeHtml(status)}</em></span>
         </button>
       `;
     }).join("");
@@ -5572,6 +5640,12 @@
       <div class="panel-title">
         <h2>周辺マップ</h2>
         <small>場所を選んで探索へ出発</small>
+      </div>
+      <div class="map-region-tabs">${regionTabs}</div>
+      <div class="map-region-summary">
+        <strong>${escapeHtml(activeRegion.name)}</strong>
+        <span>${escapeHtml(activeRegion.desc)}</span>
+        <small>${regionLocations.length}地点</small>
       </div>
       <div class="map-grid">
         ${nodes}
@@ -6442,10 +6516,33 @@
     `;
   }
 
+  function getCraftRecipeGroupId(recipe) {
+    if (recipe.resultType === "equipment") {
+      if (["weapon", "armor", "tool", "accessory"].includes(recipe.slot)) {
+        return recipe.slot;
+      }
+      return "tool";
+    }
+
+    if (recipe.station === "forge") {
+      return "forge";
+    }
+    if (recipe.station === "alchemy") {
+      return "alchemy";
+    }
+    if (recipe.station === "kitchen") {
+      return "cooking";
+    }
+    if (recipe.station === "jewel" || recipe.station === "enchant") {
+      return "jewelry";
+    }
+    return "workbench";
+  }
+
   function renderCraft() {
     const facilities = getOwnedFacilities();
     const facilityText = Array.from(facilities).map((facility) => CRAFT_STATIONS[facility] || facility).join(" / ");
-    const recipeCards = CRAFT_RECIPES.map((recipe) => {
+    const renderRecipeCard = (recipe) => {
       const rarity = getRarity(recipe.rarity);
       const hasFacility = facilities.has(recipe.station);
       const affordable = canAfford(recipe.need);
@@ -6466,6 +6563,34 @@
           <div class="recipe-cost">必要素材: ${escapeHtml(formatCost(recipe.need))}</div>
           <button type="button" data-action="craft-recipe" data-recipe="${escapeAttr(recipe.id)}" ${disabled}>${escapeHtml(stateText)}</button>
         </article>
+      `;
+    };
+
+    const recipeSections = CRAFT_RECIPE_GROUPS.map((group) => {
+      const recipes = CRAFT_RECIPES.filter((recipe) => getCraftRecipeGroupId(recipe) === group.id);
+      if (!recipes.length) {
+        return "";
+      }
+
+      const stationText = Array.from(new Set(recipes.map((recipe) => CRAFT_STATIONS[recipe.station] || recipe.station))).join(" / ");
+      const autoCount = recipes.filter((recipe) => recipe.auto).length;
+      const manualCount = recipes.length - autoCount;
+      const countText = [`${recipes.length}件`, manualCount ? `手動${manualCount}` : "", autoCount ? `自動${autoCount}` : ""].filter(Boolean).join(" / ");
+
+      return `
+        <section class="craft-recipe-section">
+          <div class="craft-section-head">
+            <div>
+              <h3>${escapeHtml(group.name)}</h3>
+              <p>${escapeHtml(group.desc)}</p>
+            </div>
+            <div class="craft-section-meta">
+              <span>${escapeHtml(stationText)}</span>
+              <small>${escapeHtml(countText)}</small>
+            </div>
+          </div>
+          <div class="craft-grid">${recipes.map(renderRecipeCard).join("")}</div>
+        </section>
       `;
     }).join("");
 
@@ -6507,8 +6632,8 @@
       </div>
       <div class="craft-layout">
         <div>
-          <h3 class="section-label">レシピ</h3>
-          <div class="craft-grid">${recipeCards}</div>
+          <h3 class="section-label">製作メニュー</h3>
+          <div class="craft-group-list">${recipeSections}</div>
         </div>
         <aside class="inventory-box">
           <h3 class="section-label">製作品</h3>
