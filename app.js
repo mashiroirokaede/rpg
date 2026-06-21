@@ -796,6 +796,114 @@
     },
   ];
 
+  const CITY_REGIONS = [
+    {
+      city: { id: "bellspire", name: "白鐘都市ベルスパイア", tone: "city", tagline: "白い鐘楼の交易都市", desc: "白い鐘楼を中心に商人と職人が集まる北街道の要所。宿と市場が整い、周辺探索の足場にしやすい。", x: 5, y: 2 },
+      sites: [
+        { id: "bellspire_grove", name: "白鐘の林道", tone: "forest", tagline: "薬草と獣道", desc: "都市の外壁から続く明るい林道。薬草は多いが、夜は小型の魔物が群れる。", danger: 2, richness: 1.12, distance: 1.2, x: 5, y: 3, exp: 28, gold: 14, enemies: ["林道の牙獣", "鐘鳴り小鬼", "白毛の追跡者"], gather: [{ key: "herb", weight: 5, min: 1, max: 3 }, { key: "wood", weight: 3, min: 1, max: 3 }, { key: "hide", weight: 2, min: 1, max: 2 }], loot: [{ key: "herb", chance: 0.6, min: 1, max: 3 }, { key: "hide", chance: 0.38, min: 1, max: 2 }] },
+        { id: "bellspire_hill", name: "鐘見の丘", tone: "mountain", tagline: "風の強い丘陵", desc: "街を見下ろす丘陵地。風切り鳥と岩肌の魔物が巡回している。", danger: 3, richness: 1.05, distance: 1.32, x: 6, y: 2, exp: 36, gold: 18, enemies: ["風切り鳥", "丘陵の石獣", "鐘見の荒くれ"], gather: [{ key: "stone", weight: 4, min: 1, max: 3 }, { key: "herb", weight: 2, min: 1, max: 2 }, { key: "ore", weight: 2, min: 1, max: 2 }], loot: [{ key: "stone", chance: 0.56, min: 1, max: 3 }, { key: "ore", chance: 0.26, min: 1, max: 2 }] },
+        { id: "bellspire_ruins", name: "旧鐘楼跡", tone: "ruin", tagline: "崩れた鐘楼遺跡", desc: "古い鐘楼が崩れた遺跡。鐘の魔力に引き寄せられた影が残る。", danger: 4, richness: 1.1, distance: 1.5, x: 4, y: 2, exp: 48, gold: 27, enemies: ["旧鐘楼の影", "錆びた番兵", "鐘霊の欠片"], gather: [{ key: "relic", weight: 3, min: 1, max: 2 }, { key: "stone", weight: 4, min: 1, max: 3 }, { key: "ore", weight: 2, min: 1, max: 2 }], loot: [{ key: "relic", chance: 0.32, min: 1, max: 2 }, { key: "gold", chance: 0.42, min: 5, max: 15 }] },
+      ],
+    },
+    {
+      city: { id: "maplehold", name: "紅葉都市メイプルホルド", tone: "city", tagline: "赤葉に守られた街", desc: "一年中赤い葉が舞う森沿いの都市。木材、薬草、繊維の取引が盛ん。", x: 7, y: 3 },
+      sites: [
+        { id: "maplehold_forest", name: "紅葉の深森", tone: "forest", tagline: "赤葉の大森林", desc: "視界を染める紅葉の森。採取量は多いが、擬態する魔物が多い。", danger: 3, richness: 1.3, distance: 1.35, x: 7, y: 4, exp: 38, gold: 18, enemies: ["紅葉羽虫", "赤葉の擬態獣", "森奥の狩人"], gather: [{ key: "wood", weight: 5, min: 1, max: 4 }, { key: "fiber", weight: 4, min: 1, max: 3 }, { key: "herb", weight: 3, min: 1, max: 2 }], loot: [{ key: "wood", chance: 0.68, min: 1, max: 4 }, { key: "fiber", chance: 0.44, min: 1, max: 3 }] },
+        { id: "maplehold_marsh", name: "赤霧の湿地", tone: "swamp", tagline: "霧深い湿地帯", desc: "赤い霧が流れる湿地。魚と薬草が多いが毒性の魔物も多い。", danger: 4, richness: 1.22, distance: 1.55, x: 8, y: 4, exp: 50, gold: 24, enemies: ["赤霧の蛙魔", "湿地の毒花", "泥底の影"], gather: [{ key: "fish", weight: 4, min: 1, max: 3 }, { key: "herb", weight: 4, min: 1, max: 3 }, { key: "fiber", weight: 2, min: 1, max: 2 }], loot: [{ key: "fish", chance: 0.58, min: 1, max: 3 }, { key: "herb", chance: 0.46, min: 1, max: 3 }, { key: "potion", chance: 0.1, min: 1, max: 1 }] },
+        { id: "maplehold_shrine", name: "落葉の祠", tone: "ruin", tagline: "森神の小祠", desc: "落葉に埋もれた古い祠。小さな遺物と護符が見つかる。", danger: 5, richness: 1.12, distance: 1.72, x: 7, y: 5, exp: 62, gold: 34, enemies: ["祠守りの狐火", "落葉の守護者", "赤面の古霊"], gather: [{ key: "relic", weight: 4, min: 1, max: 2 }, { key: "charm", weight: 1, min: 1, max: 1 }, { key: "wood", weight: 2, min: 1, max: 3 }], loot: [{ key: "relic", chance: 0.36, min: 1, max: 2 }, { key: "charm", chance: 0.09, min: 1, max: 1 }] },
+      ],
+    },
+    {
+      city: { id: "azureport", name: "蒼港都市アズールポート", tone: "city", tagline: "大海に開く港町", desc: "遠洋船が集まる港湾都市。魚、薬、外来素材が集まりやすい。", x: 3, y: 5 },
+      sites: [
+        { id: "azureport_coast", name: "蒼波の海岸", tone: "coast", tagline: "貝殻と海風", desc: "穏やかな海岸。魚や繊維が拾えるが、潮魔が現れる。", danger: 2, richness: 1.2, distance: 1.2, x: 3, y: 6, exp: 30, gold: 17, enemies: ["潮跳ねスライム", "蒼波の小魚魔", "貝殻の番人"], gather: [{ key: "fish", weight: 5, min: 1, max: 4 }, { key: "fiber", weight: 2, min: 1, max: 2 }, { key: "stone", weight: 2, min: 1, max: 2 }], loot: [{ key: "fish", chance: 0.68, min: 1, max: 4 }, { key: "fiber", chance: 0.28, min: 1, max: 2 }] },
+        { id: "azureport_reef", name: "珊瑚礁の迷路", tone: "coast", tagline: "青い岩礁地帯", desc: "干潮時だけ歩ける岩礁。美しいが道に迷いやすい。", danger: 4, richness: 1.28, distance: 1.6, x: 2, y: 6, exp: 52, gold: 28, enemies: ["珊瑚の槍魚", "迷路蟹", "深潮の歌い手"], gather: [{ key: "fish", weight: 5, min: 1, max: 4 }, { key: "relic", weight: 2, min: 1, max: 1 }, { key: "stone", weight: 3, min: 1, max: 3 }], loot: [{ key: "fish", chance: 0.62, min: 1, max: 4 }, { key: "relic", chance: 0.18, min: 1, max: 1 }] },
+        { id: "azureport_wreck", name: "沈没船の墓場", tone: "ruin", tagline: "海底から上がる亡霊船", desc: "難破船が集まる危険な入り江。金貨と遺物が眠る。", danger: 6, richness: 1.18, distance: 1.95, x: 4, y: 6, exp: 78, gold: 48, enemies: ["沈没船の亡霊", "錆剣の船員", "深海の収税人"], gather: [{ key: "relic", weight: 4, min: 1, max: 2 }, { key: "ore", weight: 3, min: 1, max: 2 }, { key: "fish", weight: 2, min: 1, max: 3 }], loot: [{ key: "gold", chance: 0.58, min: 12, max: 30 }, { key: "relic", chance: 0.35, min: 1, max: 2 }, { key: "gear", chance: 0.12, min: 1, max: 1 }] },
+      ],
+    },
+    {
+      city: { id: "sunglass", name: "砂鏡都市サングラス", tone: "city", tagline: "砂漠の蜃気楼都市", desc: "砂漠のオアシスに築かれた都市。希少鉱石と護符の噂が多い。", x: 9, y: 6 },
+      sites: [
+        { id: "sunglass_dunes", name: "硝子砂丘", tone: "desert", tagline: "光る砂の丘", desc: "日差しで硝子のように輝く砂丘。足場は悪いが鉱石が眠る。", danger: 5, richness: 1.08, distance: 1.75, x: 9, y: 7, exp: 66, gold: 38, enemies: ["砂丘の走竜", "硝子羽の虫", "乾きの盗賊"], gather: [{ key: "stone", weight: 4, min: 1, max: 4 }, { key: "ore", weight: 4, min: 1, max: 3 }, { key: "relic", weight: 1, min: 1, max: 1 }], loot: [{ key: "ore", chance: 0.56, min: 1, max: 3 }, { key: "stone", chance: 0.52, min: 1, max: 4 }] },
+        { id: "sunglass_oasis", name: "月影のオアシス", tone: "coast", tagline: "砂漠の水場", desc: "夜にだけ月が水面に映るオアシス。魚と薬草が貴重。", danger: 4, richness: 1.25, distance: 1.58, x: 8, y: 7, exp: 50, gold: 31, enemies: ["月影の水蛇", "砂水の精", "眠らない番鳥"], gather: [{ key: "fish", weight: 3, min: 1, max: 2 }, { key: "herb", weight: 5, min: 1, max: 3 }, { key: "fiber", weight: 2, min: 1, max: 2 }], loot: [{ key: "herb", chance: 0.62, min: 1, max: 3 }, { key: "fish", chance: 0.36, min: 1, max: 2 }] },
+        { id: "sunglass_tomb", name: "砂王の古墓", tone: "ruin", tagline: "王墓ダンジョン", desc: "砂に沈んだ王墓。強力な護符と危険な番人が眠っている。", danger: 8, richness: 1.18, distance: 2.25, x: 10, y: 7, exp: 116, gold: 70, enemies: ["砂王の近衛", "黄金甲虫", "呪紋の棺守"], gather: [{ key: "relic", weight: 5, min: 1, max: 3 }, { key: "charm", weight: 2, min: 1, max: 1 }, { key: "ore", weight: 3, min: 1, max: 3 }], loot: [{ key: "relic", chance: 0.46, min: 1, max: 3 }, { key: "charm", chance: 0.16, min: 1, max: 1 }, { key: "gold", chance: 0.62, min: 18, max: 42 }] },
+      ],
+    },
+    {
+      city: { id: "ironridge", name: "鉄嶺都市アイアンリッジ", tone: "city", tagline: "鍛冶師の山岳都市", desc: "山肌に作られた鍛冶都市。鉱石と装備強化素材を集めやすい。", x: 6, y: 6 },
+      sites: [
+        { id: "ironridge_mine", name: "黒鉄坑道", tone: "mine", tagline: "黒い鉱脈", desc: "良質な黒鉄を掘れる坑道。硬い魔物が多い。", danger: 5, richness: 1.38, distance: 1.8, x: 6, y: 7, exp: 70, gold: 40, enemies: ["黒鉄ゴーレム", "坑道コウモリ", "火花喰らい"], gather: [{ key: "ore", weight: 6, min: 1, max: 5 }, { key: "stone", weight: 3, min: 1, max: 3 }, { key: "gear", weight: 1, min: 1, max: 1 }], loot: [{ key: "ore", chance: 0.76, min: 1, max: 5 }, { key: "gear", chance: 0.14, min: 1, max: 1 }] },
+        { id: "ironridge_peak", name: "鉄嶺の稜線", tone: "mountain", tagline: "険しい山稜", desc: "強風が吹き抜ける山稜。鉱石と獣皮を狙える。", danger: 6, richness: 1.1, distance: 2.0, x: 7, y: 6, exp: 82, gold: 46, enemies: ["鉄羽の大鷲", "稜線の角獣", "山鳴り巨人"], gather: [{ key: "ore", weight: 4, min: 1, max: 4 }, { key: "hide", weight: 3, min: 1, max: 3 }, { key: "stone", weight: 4, min: 1, max: 4 }], loot: [{ key: "hide", chance: 0.48, min: 1, max: 3 }, { key: "ore", chance: 0.54, min: 1, max: 4 }] },
+        { id: "ironridge_furnace", name: "古代炉心跡", tone: "ruin", tagline: "熱を残す炉心遺跡", desc: "失われた炉心施設。装備強化素材と遺物の気配がある。", danger: 7, richness: 1.16, distance: 2.15, x: 6, y: 8, exp: 98, gold: 58, enemies: ["炉心の番兵", "溶鉄スライム", "火喰いの残響"], gather: [{ key: "gear", weight: 2, min: 1, max: 1 }, { key: "relic", weight: 3, min: 1, max: 2 }, { key: "ore", weight: 5, min: 1, max: 4 }], loot: [{ key: "gear", chance: 0.22, min: 1, max: 1 }, { key: "relic", chance: 0.34, min: 1, max: 2 }, { key: "ore", chance: 0.58, min: 1, max: 4 }] },
+      ],
+    },
+    {
+      city: { id: "snowcrown", name: "雪冠都市スノークラウン", tone: "city", tagline: "雪山の白都", desc: "雪山の中腹に築かれた静かな都市。寒冷地素材と珍しい遺物が流通する。", x: 1, y: 7 },
+      sites: [
+        { id: "snowcrown_pine", name: "霜松の森", tone: "snow", tagline: "雪をかぶる針葉樹林", desc: "白い松林。木材と薬草を拾えるが、視界が悪い。", danger: 4, richness: 1.2, distance: 1.6, x: 1, y: 8, exp: 54, gold: 30, enemies: ["霜松の狼", "白枝の精", "雪隠れ小鬼"], gather: [{ key: "wood", weight: 5, min: 1, max: 4 }, { key: "herb", weight: 3, min: 1, max: 2 }, { key: "hide", weight: 3, min: 1, max: 2 }], loot: [{ key: "wood", chance: 0.62, min: 1, max: 4 }, { key: "hide", chance: 0.44, min: 1, max: 2 }] },
+        { id: "snowcrown_glacier", name: "青氷の谷", tone: "snow", tagline: "氷結した谷間", desc: "青く透き通る氷の谷。石材と遺物が氷中に眠る。", danger: 6, richness: 1.12, distance: 2.05, x: 2, y: 8, exp: 84, gold: 50, enemies: ["青氷の守護獣", "氷刃の亡霊", "凍てつく羽虫"], gather: [{ key: "stone", weight: 5, min: 1, max: 4 }, { key: "relic", weight: 3, min: 1, max: 2 }, { key: "ore", weight: 2, min: 1, max: 2 }], loot: [{ key: "relic", chance: 0.28, min: 1, max: 2 }, { key: "stone", chance: 0.6, min: 1, max: 4 }] },
+        { id: "snowcrown_summit", name: "冠雪の山頂", tone: "mountain", tagline: "白竜の通り道", desc: "雪冠都市の背後にそびえる山頂。危険だが報酬も大きい。", danger: 9, richness: 1.06, distance: 2.55, x: 1, y: 9, exp: 138, gold: 82, enemies: ["白竜の眷属", "冠雪の巨人", "吹雪の女王影"], gather: [{ key: "relic", weight: 4, min: 1, max: 3 }, { key: "charm", weight: 2, min: 1, max: 1 }, { key: "ore", weight: 4, min: 1, max: 4 }], loot: [{ key: "relic", chance: 0.42, min: 1, max: 3 }, { key: "charm", chance: 0.14, min: 1, max: 1 }, { key: "gear", chance: 0.12, min: 1, max: 1 }] },
+      ],
+    },
+    {
+      city: { id: "moongate", name: "月門都市ムーンゲート", tone: "city", tagline: "月門を守る魔法都市", desc: "巨大な月門を中心に発展した魔法都市。魔力素材と護符の研究が進む。", x: 4, y: 9 },
+      sites: [
+        { id: "moongate_lake", name: "月映えの湖", tone: "river", tagline: "月光を映す湖畔", desc: "夜でも明るい湖畔。魚と薬草が豊富。", danger: 5, richness: 1.25, distance: 1.85, x: 4, y: 10, exp: 72, gold: 42, enemies: ["月湖の水精", "銀鱗の魔魚", "湖畔の幻術師"], gather: [{ key: "fish", weight: 5, min: 1, max: 4 }, { key: "herb", weight: 3, min: 1, max: 3 }, { key: "charm", weight: 1, min: 1, max: 1 }], loot: [{ key: "fish", chance: 0.64, min: 1, max: 4 }, { key: "charm", chance: 0.08, min: 1, max: 1 }] },
+        { id: "moongate_archive", name: "月門書庫跡", tone: "ruin", tagline: "失われた魔導書庫", desc: "月門研究の古書庫跡。遺物と護符が眠る。", danger: 7, richness: 1.22, distance: 2.1, x: 5, y: 9, exp: 102, gold: 60, enemies: ["書庫の紙霊", "月文字の番人", "封印漏れの影"], gather: [{ key: "relic", weight: 5, min: 1, max: 3 }, { key: "charm", weight: 2, min: 1, max: 1 }, { key: "fiber", weight: 2, min: 1, max: 3 }], loot: [{ key: "relic", chance: 0.48, min: 1, max: 3 }, { key: "charm", chance: 0.14, min: 1, max: 1 }] },
+        { id: "moongate_astral", name: "星幽の裂け目", tone: "ruin", tagline: "異界に近い狭間", desc: "空間がひび割れた危険地帯。高ランク素材が出やすい。", danger: 10, richness: 1.1, distance: 2.8, x: 4, y: 11, exp: 170, gold: 96, enemies: ["星幽の捕食者", "裂け目の監視者", "月門の失敗作"], gather: [{ key: "relic", weight: 5, min: 2, max: 4 }, { key: "charm", weight: 3, min: 1, max: 2 }, { key: "starseed", weight: 1, min: 1, max: 1 }], loot: [{ key: "relic", chance: 0.54, min: 2, max: 4 }, { key: "charm", chance: 0.2, min: 1, max: 2 }, { key: "starseed", chance: 0.03, min: 1, max: 1 }] },
+      ],
+    },
+    {
+      city: { id: "greenring", name: "緑環都市グリーンリング", tone: "city", tagline: "農園と森の円環都市", desc: "巨大な緑の防壁に囲まれた都市。食料、木材、薬草が豊富。", x: 8, y: 1 },
+      sites: [
+        { id: "greenring_fields", name: "緑環の農園", tone: "field", tagline: "広大な農園地帯", desc: "食料と薬草の生産地。魔物は弱めだが数が多い。", danger: 2, richness: 1.32, distance: 1.18, x: 8, y: 2, exp: 30, gold: 15, enemies: ["畑荒らしモール", "麦わら小鬼", "緑環の野犬"], gather: [{ key: "food", weight: 5, min: 1, max: 3 }, { key: "herb", weight: 4, min: 1, max: 3 }, { key: "fiber", weight: 2, min: 1, max: 2 }], loot: [{ key: "food", chance: 0.6, min: 1, max: 3 }, { key: "herb", chance: 0.48, min: 1, max: 3 }] },
+        { id: "greenring_oldwood", name: "古樹の森", tone: "forest", tagline: "巨大樹の森", desc: "古い大樹が連なる森。木材と繊維は多いが、守護者が強い。", danger: 5, richness: 1.38, distance: 1.85, x: 9, y: 1, exp: 72, gold: 40, enemies: ["古樹の守り手", "蔦絡みの獣", "苔むした巨腕"], gather: [{ key: "wood", weight: 6, min: 1, max: 5 }, { key: "fiber", weight: 4, min: 1, max: 4 }, { key: "relic", weight: 1, min: 1, max: 1 }], loot: [{ key: "wood", chance: 0.72, min: 1, max: 5 }, { key: "fiber", chance: 0.52, min: 1, max: 4 }] },
+        { id: "greenring_beehive", name: "蜜晶の巣窟", tone: "cave", tagline: "甘い香りの洞窟", desc: "蜜晶を作る魔蜂の洞窟。贈り物や食料に使える素材がある。", danger: 6, richness: 1.16, distance: 2.0, x: 8, y: 1, exp: 88, gold: 45, enemies: ["蜜晶蜂", "女王の斥候", "甘香に酔う獣"], gather: [{ key: "food", weight: 5, min: 1, max: 4 }, { key: "gift", weight: 2, min: 1, max: 1 }, { key: "fiber", weight: 3, min: 1, max: 3 }], loot: [{ key: "food", chance: 0.58, min: 1, max: 4 }, { key: "gift", chance: 0.16, min: 1, max: 1 }] },
+      ],
+    },
+    {
+      city: { id: "obsidian", name: "黒曜都市オブシディアン", tone: "city", tagline: "黒い城壁の鉱都", desc: "黒曜石の城壁を持つ鉱山都市。高難度の鉱脈が多い。", x: 10, y: 3 },
+      sites: [
+        { id: "obsidian_quarry", name: "黒曜採石場", tone: "mine", tagline: "黒石の採石地", desc: "黒曜石を切り出す採石場。石材と鉱石が豊富。", danger: 5, richness: 1.35, distance: 1.75, x: 10, y: 4, exp: 74, gold: 42, enemies: ["黒曜の石人", "採石場の牙虫", "割岩の荒くれ"], gather: [{ key: "stone", weight: 6, min: 1, max: 5 }, { key: "ore", weight: 4, min: 1, max: 4 }, { key: "gear", weight: 1, min: 1, max: 1 }], loot: [{ key: "stone", chance: 0.74, min: 1, max: 5 }, { key: "ore", chance: 0.48, min: 1, max: 4 }] },
+        { id: "obsidian_lava", name: "赤熱溶岩道", tone: "desert", tagline: "熱を帯びる岩道", desc: "地下熱が表面に出た危険な岩道。強い敵が多い。", danger: 8, richness: 1.08, distance: 2.38, x: 9, y: 4, exp: 124, gold: 72, enemies: ["赤熱の溶岩獣", "火脈の番人", "黒煙の翼"], gather: [{ key: "ore", weight: 5, min: 1, max: 5 }, { key: "relic", weight: 3, min: 1, max: 2 }, { key: "gear", weight: 2, min: 1, max: 1 }], loot: [{ key: "ore", chance: 0.66, min: 1, max: 5 }, { key: "gear", chance: 0.2, min: 1, max: 1 }] },
+        { id: "obsidian_depths", name: "黒曜深層坑", tone: "cave", tagline: "最深部の坑道", desc: "黒曜都市の最深部。滅多に開かない高危険度の坑道。", danger: 10, richness: 1.22, distance: 2.9, x: 10, y: 5, exp: 180, gold: 110, enemies: ["黒曜の深層主", "結晶甲冑", "闇熱の採掘者"], gather: [{ key: "ore", weight: 6, min: 2, max: 5 }, { key: "gear", weight: 2, min: 1, max: 2 }, { key: "relic", weight: 3, min: 1, max: 3 }], loot: [{ key: "gear", chance: 0.28, min: 1, max: 2 }, { key: "relic", chance: 0.42, min: 1, max: 3 }, { key: "gold", chance: 0.66, min: 20, max: 55 }] },
+      ],
+    },
+    {
+      city: { id: "skybridge", name: "天橋都市スカイブリッジ", tone: "city", tagline: "空中橋の高都", desc: "峡谷に架かる巨大橋の上に築かれた都市。空路と山道の要衝。", x: 6, y: 10 },
+      sites: [
+        { id: "skybridge_cliff", name: "天橋の断崖", tone: "mountain", tagline: "雲を切る崖道", desc: "足場の細い断崖路。速度と偵察がものを言う。", danger: 7, richness: 1.08, distance: 2.2, x: 6, y: 11, exp: 104, gold: 62, enemies: ["断崖の跳躍獣", "雲裂き鳥", "橋下の山賊"], gather: [{ key: "stone", weight: 4, min: 1, max: 4 }, { key: "hide", weight: 4, min: 1, max: 3 }, { key: "ore", weight: 2, min: 1, max: 3 }], loot: [{ key: "hide", chance: 0.54, min: 1, max: 3 }, { key: "stone", chance: 0.5, min: 1, max: 4 }] },
+        { id: "skybridge_cloudwood", name: "雲上の小森", tone: "forest", tagline: "橋上に育つ森", desc: "空に近い湿った森。珍しい繊維と薬草が採れる。", danger: 6, richness: 1.32, distance: 2.0, x: 7, y: 10, exp: 92, gold: 52, enemies: ["雲綿の蔦獣", "空鳴りリス", "白霧の狩人"], gather: [{ key: "fiber", weight: 5, min: 1, max: 4 }, { key: "herb", weight: 4, min: 1, max: 3 }, { key: "wood", weight: 3, min: 1, max: 3 }], loot: [{ key: "fiber", chance: 0.64, min: 1, max: 4 }, { key: "herb", chance: 0.46, min: 1, max: 3 }] },
+        { id: "skybridge_skygate", name: "空門の残骸", tone: "ruin", tagline: "空に続く古代門", desc: "崩れた空門の遺跡。星に近い力を帯びる危険地帯。", danger: 10, richness: 1.12, distance: 2.85, x: 5, y: 11, exp: 176, gold: 102, enemies: ["空門の残響", "落星の番人", "橋を渡る異形"], gather: [{ key: "relic", weight: 5, min: 2, max: 4 }, { key: "charm", weight: 3, min: 1, max: 2 }, { key: "starseed", weight: 1, min: 1, max: 1 }], loot: [{ key: "relic", chance: 0.52, min: 2, max: 4 }, { key: "charm", chance: 0.2, min: 1, max: 2 }, { key: "starseed", chance: 0.035, min: 1, max: 1 }] },
+      ],
+    },
+    {
+      city: { id: "rosehaven", name: "薔薇都市ローズヘイブン", tone: "city", tagline: "花園と社交の街", desc: "美しい花園と社交サロンで知られる都市。贈り物や薬草の流通が多い。", x: 2, y: 10 },
+      sites: [
+        { id: "rosehaven_garden", name: "薔薇迷宮庭園", tone: "forest", tagline: "薔薇の迷路", desc: "薔薇の生垣でできた庭園迷路。贈り物素材が拾える。", danger: 4, richness: 1.24, distance: 1.65, x: 2, y: 11, exp: 58, gold: 34, enemies: ["薔薇棘の人形", "香りに酔う蝶", "庭園の仮面客"], gather: [{ key: "herb", weight: 5, min: 1, max: 3 }, { key: "gift", weight: 2, min: 1, max: 1 }, { key: "fiber", weight: 3, min: 1, max: 3 }], loot: [{ key: "herb", chance: 0.58, min: 1, max: 3 }, { key: "gift", chance: 0.16, min: 1, max: 1 }] },
+        { id: "rosehaven_vineyard", name: "月葡萄の丘", tone: "field", tagline: "月色の葡萄畑", desc: "月色の葡萄が実る丘。食料と薬草が多い。", danger: 3, richness: 1.26, distance: 1.42, x: 3, y: 10, exp: 42, gold: 25, enemies: ["葡萄畑の小鬼", "月葡萄の蔦獣", "酔いどれ羽虫"], gather: [{ key: "food", weight: 5, min: 1, max: 3 }, { key: "herb", weight: 3, min: 1, max: 2 }, { key: "wood", weight: 2, min: 1, max: 2 }], loot: [{ key: "food", chance: 0.58, min: 1, max: 3 }, { key: "herb", chance: 0.38, min: 1, max: 2 }] },
+        { id: "rosehaven_catacomb", name: "花葬地下墓地", tone: "cave", tagline: "花に覆われた地下墓地", desc: "薔薇都市の地下に広がる墓地。護符と遺物が眠る。", danger: 7, richness: 1.15, distance: 2.08, x: 1, y: 11, exp: 102, gold: 58, enemies: ["花葬の亡者", "棘冠の騎士", "香煙の怨霊"], gather: [{ key: "relic", weight: 4, min: 1, max: 3 }, { key: "charm", weight: 2, min: 1, max: 1 }, { key: "herb", weight: 3, min: 1, max: 3 }], loot: [{ key: "relic", chance: 0.4, min: 1, max: 3 }, { key: "charm", chance: 0.14, min: 1, max: 1 }] },
+      ],
+    },
+  ];
+
+  for (const region of CITY_REGIONS) {
+    LOCATIONS.push({
+      ...region.city,
+      desc: region.city.desc || `${region.city.name}周辺を探索するための都市拠点。`,
+      danger: 0,
+      richness: 0.9,
+      distance: 1,
+      gather: [
+        { key: "herb", weight: 3, min: 1, max: 2 },
+        { key: "food", weight: 2, min: 1, max: 2 },
+        { key: "wood", weight: 1, min: 1, max: 1 },
+      ],
+      enemies: [],
+    });
+    LOCATIONS.push(...region.sites);
+  }
+
   const CRAFT_RECIPES = [
     {
       key: "gear",
@@ -1530,6 +1638,28 @@
   };
 
   const elements = {};
+  const MENU_VIEW_DEFS = [
+    { id: "base", label: "ホーム" },
+    { id: "explore", label: "探索" },
+    { id: "party", label: "仲間" },
+    { id: "craft", label: "工房" },
+    { id: "facilities", label: "拠点" },
+    { id: "quests", label: "依頼" },
+    { id: "rebirth", label: "転生" },
+    { id: "market", label: "商店" },
+    { id: "guild", label: "ギルド" },
+    { id: "codex", label: "図鑑" },
+    { id: "story", label: "物語" },
+    { id: "account", label: "連携" },
+  ];
+
+  Object.assign(VIEW_PANELS, {
+    craft: ["craftPanel", "resourcesPanel", "logPanel"],
+    facilities: ["basePanel", "resourcesPanel", "logPanel"],
+    quests: ["basePanel", "resourcesPanel", "logPanel"],
+    rebirth: ["basePanel", "resourcesPanel", "logPanel"],
+  });
+
   let selectedCategory = "combat";
   let state = loadState();
   let firebaseConfig = loadFirebaseConfig();
@@ -1965,7 +2095,7 @@
       const stateToUse = {
         ...fallback,
         ...parsed,
-        view: VIEW_DEFS.some((view) => view.id === parsed.view) ? parsed.view : fallback.view,
+        view: MENU_VIEW_DEFS.some((view) => view.id === parsed.view) ? parsed.view : fallback.view,
         resources: { ...fallback.resources, ...(parsed.resources || {}) },
         clears: parsed.clears || {},
         story: normalizeStory(parsed.story),
@@ -2202,6 +2332,15 @@
       power: Math.max(1, Number(encounter.power) || 1),
       isStrongEnemy: Boolean(encounter.isStrongEnemy),
       startedAt: Math.max(0, Number(encounter.startedAt) || Date.now()),
+      lastPlayerDamage: Math.max(0, Math.floor(Number(encounter.lastPlayerDamage) || 0)),
+      lastEnemyDamage: Math.max(0, Math.floor(Number(encounter.lastEnemyDamage) || 0)),
+      lastEnemyAction: String(encounter.lastEnemyAction || "").slice(0, 80),
+      battleLog: Array.isArray(encounter.battleLog)
+        ? encounter.battleLog.slice(0, 6).map((entry) => ({
+            text: String(entry?.text || "").slice(0, 120),
+            type: String(entry?.type || "info").slice(0, 16),
+          }))
+        : [],
     };
   }
 
@@ -2580,7 +2719,7 @@
   function toggleExplore() {
     const location = getSelectedLocation();
 
-    if (location.id === "town") {
+    if (location.danger <= 0) {
       state.exploring = false;
       state.encounter = null;
       addLog("街では生産と補給を進めます。周辺マップを選ぶと探索できます。", "loot");
@@ -3388,7 +3527,7 @@
   }
 
   function simulateTick(silent) {
-    if (state.selectedLocation === "town") {
+    if ((LOCATION_BY_ID[state.selectedLocation] || LOCATION_BY_ID.town).danger <= 0) {
       state.exploring = false;
     }
 
@@ -3499,6 +3638,18 @@
     advanceEncounter(stats, location, silent);
   }
 
+  function pushBattleEvent(encounter, text, type = "info") {
+    if (!encounter) {
+      return;
+    }
+    encounter.battleLog = Array.isArray(encounter.battleLog) ? encounter.battleLog : [];
+    encounter.battleLog.unshift({
+      text,
+      type,
+    });
+    encounter.battleLog = encounter.battleLog.slice(0, 6);
+  }
+
   function startEncounter(location, stats, silent) {
     const clears = state.clears[location.id] || 0;
     const isStrongEnemy = clears > 0 && clears % 8 === 7;
@@ -3515,6 +3666,10 @@
       power,
       isStrongEnemy,
       startedAt: Date.now(),
+      lastPlayerDamage: 0,
+      lastEnemyDamage: 0,
+      lastEnemyAction: "敵の動きを見ています。",
+      battleLog: [{ text: `${enemyName}が現れました。戦闘開始。`, type: "warn" }],
     };
     state.progress = 0;
 
@@ -3527,7 +3682,10 @@
     const encounter = state.encounter;
     const baseDamage = stats.atk * 0.55 + stats.mag * 0.42 + stats.speed * 0.22 + stats.combat * 0.035;
     const damage = Math.max(5, baseDamage) * randomFloat(0.82, 1.2);
+    const dealtDamage = Math.max(1, Math.floor(damage));
     encounter.hp = Math.max(0, encounter.hp - damage);
+    encounter.lastPlayerDamage = dealtDamage;
+    pushBattleEvent(encounter, `味方の攻撃: ${encounter.name}に${dealtDamage}ダメージ。`, "player");
 
     if (encounter.hp <= 0) {
       completeEncounterVictory(location, stats, encounter, silent);
@@ -3537,6 +3695,10 @@
     const pressureChance = clamp(encounter.power / (stats.combat + encounter.power + 220), 0.03, 0.32);
     if (Math.random() < pressureChance) {
       sufferEncounterPressure(encounter, silent);
+    } else {
+      encounter.lastEnemyDamage = 0;
+      encounter.lastEnemyAction = `${encounter.name}の攻撃を受け流しました。`;
+      pushBattleEvent(encounter, `敵の攻撃: ${encounter.name}の攻撃を受け流した。`, "guard");
     }
   }
 
@@ -3572,15 +3734,23 @@
   function sufferEncounterPressure(encounter, silent) {
     const usedPotion = state.resources.potion > 0;
     const usedFood = !usedPotion && state.resources.food > 0;
+    const enemyDamage = Math.max(1, Math.floor(encounter.power * randomFloat(0.08, 0.18)));
+    let battleResult = "";
 
     if (usedPotion) {
       state.resources.potion -= 1;
+      battleResult = "ポーションで立て直した";
     } else if (usedFood) {
       state.resources.food -= 1;
+      battleResult = "携行食で踏みとどまった";
     } else {
       state.progress = Math.max(0, state.progress - 8);
+      battleResult = "隊列が押し戻された";
     }
 
+    encounter.lastEnemyDamage = enemyDamage;
+    encounter.lastEnemyAction = `${encounter.name}の反撃: 被害${enemyDamage}。${battleResult}。`;
+    pushBattleEvent(encounter, `敵の攻撃: 被害${enemyDamage}。${battleResult}。`, "enemy");
     applyXp(Math.max(1, Math.floor(encounter.power * 0.025)), true);
 
     if (!silent && Math.random() < 0.35) {
@@ -5105,7 +5275,7 @@
     const title = getActiveTitle();
     const status = state.exploring ? "探索中" : "拠点作業中";
     const heroXpPercent = Math.floor(clamp((hero.xp / getNextLevelXp(hero.level)) * 100, 0, 100));
-    const menu = VIEW_DEFS.map((view) => {
+    const menu = MENU_VIEW_DEFS.map((view) => {
       const active = state.view === view.id ? "active" : "";
       return `<button type="button" class="${active}" data-action="set-view" data-view="${escapeAttr(view.id)}">${escapeHtml(view.label)}</button>`;
     }).join("");
@@ -5385,7 +5555,7 @@
         <button
           type="button"
           class="map-node ${escapeAttr(location.tone)} ${selected}"
-          style="grid-column: ${location.x}; grid-row: ${location.y};"
+          style="--map-x: ${location.x}; --map-y: ${location.y};"
           data-action="select-location"
           data-location="${escapeAttr(location.id)}"
         >
@@ -5419,7 +5589,7 @@
       : location.danger > 0
         ? clamp(state.progress, 0, 100)
         : clamp(state.craftProgress / 140 * 100, 0, 100);
-    const progressLabel = encounter ? `${encounter.name} HP` : location.id === "town" ? "生産進行" : "モンスター探索";
+    const progressLabel = encounter ? `${encounter.name} HP` : location.danger <= 0 ? "生産進行" : "モンスター探索";
     const progressText = encounter ? `${Math.ceil(encounter.hp)} / ${encounter.maxHp}` : `${Math.floor(progress)}%`;
     const clears = state.clears[location.id] || 0;
     const drops = [
@@ -5427,7 +5597,7 @@
       ...(location.loot || []).map((entry) => RESOURCE_LABELS[entry.key]),
     ];
     const uniqueDrops = Array.from(new Set(drops)).slice(0, 7);
-    const isTown = location.id === "town";
+    const isTown = location.danger <= 0;
     const actionLabel = state.exploring ? "街へ戻る" : "一緒に探索";
     const actionClass = state.exploring ? "danger-action" : "primary-action";
     const bossCards = BOSS_DUNGEONS.filter((boss) => boss.locationId === location.id)
@@ -5461,6 +5631,11 @@
         </div>
       `
       : "";
+    const battleEvents = encounter
+      ? (encounter.battleLog || [])
+          .map((entry) => `<div class="battle-log-line ${escapeAttr(entry.type || "info")}">${escapeHtml(entry.text)}</div>`)
+          .join("")
+      : "";
 
     const battlePanel = encounter
       ? `
@@ -5474,6 +5649,13 @@
             <span>HP ${Math.ceil(encounter.hp)} / ${encounter.maxHp}</span>
             <div class="progress-bar" aria-hidden="true"><i style="--value: ${clamp((encounter.hp / encounter.maxHp) * 100, 0, 100)}%"></i></div>
           </div>
+          <div class="battle-detail-grid">
+            <span>味方の攻撃</span>
+            <strong>${formatNumber(encounter.lastPlayerDamage || 0)} ダメージ</strong>
+            <span>敵の攻撃</span>
+            <strong>${escapeHtml(encounter.lastEnemyAction || "様子を見ている")}</strong>
+          </div>
+          <div class="battle-log-mini">${battleEvents}</div>
         </div>
       `
       : !isTown
@@ -6174,6 +6356,67 @@
         </article>
       `;
     }).join("");
+
+    const baseSummaryHtml = `
+      <div class="panel-title">
+        <h2>${state.view === "base" ? "ホーム" : "拠点"}</h2>
+        <small>${escapeHtml(current.name)} / 所有${owned.size}件</small>
+      </div>
+      <div class="base-summary">
+        <div>
+          <span>現在の滞在先</span>
+          <strong>${escapeHtml(current.name)}</strong>
+          <p>${current.id === "inn" ? "今は宿に泊まっています。素材と金貨を集めると、自分たちの拠点を購入できます。" : escapeHtml(current.desc)}</p>
+        </div>
+        <div class="tag-row">${facilityTags || '<span class="tag">施設なし</span>'}</div>
+      </div>
+    `;
+
+    if (state.view === "base") {
+      elements.basePanel.innerHTML = `
+        ${baseSummaryHtml}
+        <div class="tag-row">
+          <span class="tag good">仲間 ${state.members.length}人</span>
+          <span class="tag">探索勝利 ${getTotalClears()}回</span>
+          <span class="tag">ボス討伐 ${getTotalBossClears()}回</span>
+          <span class="tag">所有拠点 ${owned.size}件</span>
+        </div>
+      `;
+      return;
+    }
+
+    if (state.view === "facilities") {
+      elements.basePanel.innerHTML = `
+        ${baseSummaryHtml}
+        <h3 class="section-label">施設アップグレード</h3>
+        <div class="facility-grid">${facilityCards || '<p class="empty-log">購入済み拠点の施設がここに表示されます。</p>'}</div>
+        <h3 class="section-label">拠点購入</h3>
+        <div class="base-grid">${cards}</div>
+      `;
+      return;
+    }
+
+    if (state.view === "quests") {
+      elements.basePanel.innerHTML = `
+        <div class="panel-title">
+          <h2>依頼掲示板</h2>
+          <small>通常依頼</small>
+        </div>
+        <div class="quest-grid">${questCards}</div>
+      `;
+      return;
+    }
+
+    if (state.view === "rebirth") {
+      elements.basePanel.innerHTML = `
+        <div class="panel-title">
+          <h2>周回・転生</h2>
+          <small>星核転生</small>
+        </div>
+        <div class="rebirth-grid">${rebirthCard}</div>
+      `;
+      return;
+    }
 
     elements.basePanel.innerHTML = `
       <div class="panel-title">

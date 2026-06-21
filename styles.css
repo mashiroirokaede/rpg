@@ -164,7 +164,7 @@ select {
 .main-menu {
   grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: repeat(9, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(82px, 1fr));
   gap: 8px;
   padding: 9px;
   border: 1px solid var(--line);
@@ -1247,6 +1247,51 @@ select {
   font-size: 0.78rem;
 }
 
+.battle-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(76px, auto) minmax(0, 1fr);
+  gap: 6px 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 8px;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.battle-detail-grid strong {
+  min-width: 0;
+  color: var(--paper);
+  overflow-wrap: anywhere;
+}
+
+.battle-log-mini {
+  display: grid;
+  gap: 5px;
+}
+
+.battle-log-line {
+  border-left: 3px solid var(--line-strong);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.035);
+  padding: 6px 8px;
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.battle-log-line.player {
+  border-left-color: var(--green);
+  color: #cfe8d3;
+}
+
+.battle-log-line.enemy {
+  border-left-color: var(--red);
+  color: #f0cbc6;
+}
+
+.battle-log-line.guard {
+  border-left-color: var(--blue);
+  color: #cbe2ee;
+}
+
 .craft-layout {
   display: grid;
   grid-template-columns: minmax(420px, 1fr) minmax(240px, 0.38fr);
@@ -1309,16 +1354,20 @@ select {
 
 .map-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(112px, 1fr));
-  grid-auto-rows: minmax(116px, auto);
+  grid-template-columns: repeat(10, minmax(112px, 1fr));
+  grid-auto-rows: minmax(104px, auto);
   gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
 }
 
 .map-node {
   position: relative;
   display: grid;
+  grid-column: var(--map-x);
+  grid-row: var(--map-y);
   align-content: space-between;
-  min-height: 116px;
+  min-height: 104px;
   padding: 10px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -1345,6 +1394,13 @@ select {
   background:
     linear-gradient(135deg, rgba(215, 167, 77, 0.20), transparent 45%),
     #292118;
+}
+
+.map-node.city {
+  background:
+    linear-gradient(135deg, rgba(215, 167, 77, 0.18), transparent 44%),
+    linear-gradient(160deg, rgba(103, 169, 201, 0.10), transparent 58%),
+    #27211a;
 }
 
 .map-node.field {
@@ -1381,6 +1437,36 @@ select {
   background:
     linear-gradient(135deg, rgba(199, 109, 95, 0.20), transparent 52%),
     #1a1514;
+}
+
+.map-node.coast {
+  background:
+    linear-gradient(135deg, rgba(103, 169, 201, 0.32), transparent 52%),
+    #121d21;
+}
+
+.map-node.mountain {
+  background:
+    linear-gradient(135deg, rgba(186, 173, 153, 0.28), transparent 52%),
+    #1d1b17;
+}
+
+.map-node.desert {
+  background:
+    linear-gradient(135deg, rgba(215, 167, 77, 0.26), transparent 52%),
+    #241d13;
+}
+
+.map-node.snow {
+  background:
+    linear-gradient(135deg, rgba(210, 230, 245, 0.26), transparent 52%),
+    #151c21;
+}
+
+.map-node.swamp {
+  background:
+    linear-gradient(135deg, rgba(105, 183, 122, 0.20), transparent 52%),
+    #141d16;
 }
 
 .node-top {
@@ -2120,6 +2206,11 @@ select {
   .shop-stock-grid,
   .equipment-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .map-node {
+    grid-column: auto;
+    grid-row: auto;
   }
 
   button,
