@@ -1757,12 +1757,24 @@
         selectLocation(actionElement.dataset.location);
       }
 
+      if (action === "cancel-travel") {
+        cancelTravel();
+      }
+
       if (action === "set-map-region") {
         setMapRegion(actionElement.dataset.region);
       }
 
       if (action === "toggle-explore") {
         toggleExplore();
+      }
+
+      if (action === "toggle-battle-auto") {
+        toggleBattleAuto();
+      }
+
+      if (action === "battle-command") {
+        performBattleCommand(actionElement.dataset.command);
       }
 
       if (action === "set-category") {
@@ -2030,6 +2042,7 @@
       },
       selectedLocation: "town",
       mapRegionId: "starter",
+      visitedLocations: { town: true },
       exploring: false,
       progress: 0,
       gatherProgress: 0,
@@ -2059,6 +2072,16 @@
         lastGain: 0,
       },
       encounter: null,
+      battleMode: "auto",
+      travel: {
+        active: false,
+        fromId: "town",
+        targetId: "",
+        progress: 0,
+        duration: 0,
+        encounter: null,
+        startedAt: 0,
+      },
       guild: {
         activeId: "adventurers",
         reputation: {},
@@ -2139,6 +2162,8 @@
         skillTree: normalizeSkillTree(parsed.skillTree),
         rebirth: normalizeRebirth(parsed.rebirth),
         encounter: normalizeEncounter(parsed.encounter),
+        battleMode: parsed.battleMode === "manual" ? "manual" : "auto",
+        travel: normalizeTravel(parsed.travel),
         guild: normalizeGuild(parsed.guild),
         guildRequests: normalizeGuildRequests(parsed.guildRequests),
         monsterKills: normalizeCounterMap(parsed.monsterKills),
@@ -2148,6 +2173,7 @@
         familiars: normalizeFamiliars(parsed.familiars),
         playerShop: normalizePlayerShop(parsed.playerShop),
         base: normalizeBase(parsed.base),
+        visitedLocations: parsed.visitedLocations || fallback.visitedLocations,
         inventory: normalizedInventory,
         nextItemId: Math.max(getNextItemId(normalizedInventory), Number(parsed.nextItemId) || 1),
         logs: Array.isArray(parsed.logs) ? parsed.logs.slice(0, 80) : fallback.logs,
@@ -2166,6 +2192,7 @@
       if (!MAP_REGION_BY_ID[stateToUse.mapRegionId] || !MAP_REGION_BY_ID[stateToUse.mapRegionId].locationIds.includes(stateToUse.selectedLocation)) {
         stateToUse.mapRegionId = getMapRegionIdForLocation(stateToUse.selectedLocation);
       }
+      stateToUse.visitedLocations = normalizeVisitedLocations(stateToUse.visitedLocations, stateToUse.selectedLocation, stateToUse.clears);
 
       cleanupEquipmentAssignments(stateToUse);
 
@@ -2377,6 +2404,44 @@
             type: String(entry?.type || "info").slice(0, 16),
           }))
         : [],
+    };
+  }
+
+  function normalizeTravel(travel) {
+    if (!travel || typeof travel !== "object" || !travel.active) {
+      return {
+        active: false,
+        fromId: "town",
+        targetId: "",
+        progress: 0,
+        duration: 0,
+        encounter: null,
+        startedAt: 0,
+      };
+    }
+
+    const fromId = LOCATION_BY_ID[travel.fromId] ? String(travel.fromId) : "town";
+    const targetId = LOCATION_BY_ID[travel.targetId] ? String(travel.targetId) : "";
+    if (!targetId || fromId === targetId) {
+      return {
+        active: false,
+        fromId,
+        targetId: "",
+        progress: 0,
+        duration: 0,
+        encounter: null,
+        startedAt: 0,
+      };
+    }
+
+    return {
+      active: true,
+      fromId,
+      targetId,
+      progress: clamp(Number(travel.progress) || 0, 0, 100),
+      duration: Math.max(10, Math.floor(Number(travel.duration) || getTravelDuration(LOCATION_BY_ID[fromId], LOCATION_BY_ID[targetId]))),
+      encounter: normalizeEncounter(travel.encounter),
+      startedAt: Math.max(0, Number(travel.startedAt) || Date.now()),
     };
   }
 
@@ -2737,23 +2802,71 @@
   }
 
   function selectLocation(locationId) {
-    if (!LOCATION_BY_ID[locationId]) return;
+    const location = LOCATION_BY_ID[locationId];
+    if (!location) return;
 
-    const previous = state.selectedLocation;
-    state.selectedLocation = locationId;
-    state.mapRegionId = getMapRegionIdForLocation(locationId);
-
-    if (previous !== locationId) {
-      state.progress = 0;
-      state.encounter = null;
-      state.exploring = false;
-      addLog(`${LOCATION_BY_ID[locationId].name}を目的地に設定しました。`, "loot");
+    if (locationId === state.selectedLocation) {
+      state.travel = normalizeTravel(state.travel);
+      if (state.travel.active) {
+        cancelTravel();
+        return;
+      }
+      return;
     }
 
+    startTravel(locationId);
+  }
+
+  function startTravel(targetId) {
+    const from = getSelectedLocation();
+    const target = LOCATION_BY_ID[targetId];
+    if (!target || from.id === target.id) {
+      return;
+    }
+
+    const targetKnown = isLocationDiscovered(target);
+    state.travel = {
+      active: true,
+      fromId: from.id,
+      targetId: target.id,
+      progress: 0,
+      duration: getTravelDuration(from, target),
+      encounter: null,
+      startedAt: Date.now(),
+    };
+    state.mapRegionId = getMapRegionIdForLocation(target.id);
+    state.exploring = false;
+    state.encounter = null;
+    state.progress = 0;
+    addLog(targetKnown ? `${target.name}へ移動を開始しました。` : "未開の地へ移動を開始しました。道中の安全は保証できません。", "loot");
+
+    saveState(false);
+    renderAll();
+  }
+
+  function cancelTravel() {
+    state.travel = {
+      active: false,
+      fromId: state.selectedLocation,
+      targetId: "",
+      progress: 0,
+      duration: 0,
+      encounter: null,
+      startedAt: 0,
+    };
+    addLog("移動を中止して現在地に留まりました。", "warn");
+    saveState(false);
     renderAll();
   }
 
   function toggleExplore() {
+    state.travel = normalizeTravel(state.travel);
+    if (state.travel.active) {
+      addLog("移動中は通常探索を開始できません。目的地へ到着してから探索できます。", "warn");
+      renderAll();
+      return;
+    }
+
     const location = getSelectedLocation();
 
     if (location.danger <= 0) {
@@ -2769,6 +2882,52 @@
       state.encounter = null;
     }
     addLog(state.exploring ? `${location.name}へヒロインたちと探索に出発。同行人数は${state.members.length}人、上限なし。` : "探索隊が街へ戻りました。", state.exploring ? "loot" : "warn");
+    renderAll();
+  }
+
+  function toggleBattleAuto() {
+    state.battleMode = state.battleMode === "manual" ? "auto" : "manual";
+    addLog(state.battleMode === "auto" ? "戦闘を自動進行に切り替えました。" : "戦闘を手動コマンドに切り替えました。", "loot");
+    saveState(false);
+    renderAll();
+  }
+
+  function getActiveBattleContext() {
+    if (state.encounter && state.encounter.hp > 0) {
+      return {
+        kind: "explore",
+        encounter: state.encounter,
+        location: getSelectedLocation(),
+      };
+    }
+
+    const travel = getActiveTravel();
+    if (travel?.encounter && travel.encounter.hp > 0) {
+      return {
+        kind: "travel",
+        encounter: travel.encounter,
+        location: LOCATION_BY_ID[travel.encounter.locationId] || LOCATION_BY_ID[travel.targetId] || getSelectedLocation(),
+      };
+    }
+    return null;
+  }
+
+  function performBattleCommand(command) {
+    const context = getActiveBattleContext();
+    if (!context) {
+      addLog("現在は戦闘中ではありません。", "warn");
+      renderLogs();
+      return;
+    }
+
+    const stats = aggregateStats();
+    const commandId = ["attack", "skill", "guard"].includes(command) ? command : "attack";
+    if (context.kind === "travel") {
+      advanceTravelEncounter(stats, context.location, false, commandId);
+    } else {
+      advanceEncounter(stats, context.location, false, commandId);
+    }
+    saveState(false);
     renderAll();
   }
 
@@ -3564,6 +3723,11 @@
   }
 
   function simulateTick(silent) {
+    state.travel = normalizeTravel(state.travel);
+    if (state.travel.active) {
+      state.exploring = false;
+    }
+
     if ((LOCATION_BY_ID[state.selectedLocation] || LOCATION_BY_ID.town).danger <= 0) {
       state.exploring = false;
     }
@@ -3576,12 +3740,213 @@
     performExpeditions(stats, silent);
     performPlayerShop(stats, silent);
 
+    if (state.travel.active) {
+      state.encounter = null;
+      performTravel(stats, silent);
+      return;
+    }
+
     if (!state.exploring || activeLocation.danger <= 0) {
       state.encounter = null;
       return;
     }
 
     performExplorationBattle(stats, activeLocation, silent);
+  }
+
+  function performTravel(stats, silent) {
+    const travel = getActiveTravel();
+    if (!travel) {
+      return;
+    }
+
+    const from = LOCATION_BY_ID[travel.fromId] || getSelectedLocation();
+    const target = LOCATION_BY_ID[travel.targetId];
+    if (!target || from.id === target.id) {
+      state.travel = normalizeTravel(null);
+      return;
+    }
+
+    if (travel.encounter && travel.encounter.hp > 0) {
+      if (state.battleMode === "manual") {
+        return;
+      }
+      advanceTravelEncounter(stats, target, silent);
+      return;
+    }
+
+    travel.encounter = null;
+    travel.duration = Math.max(10, Math.floor(travel.duration || getTravelDuration(from, target)));
+    const speedFactor = clamp(1 + stats.speed / 140 + stats.scout / 220 + Math.sqrt(stats.partySize || 1) / 16, 0.8, 2.25);
+    travel.progress = clamp(travel.progress + 100 / travel.duration * speedFactor, 0, 100);
+
+    if (travel.progress >= 100) {
+      completeTravelArrival(target, silent);
+      return;
+    }
+
+    const danger = getTravelRouteDanger(from, target);
+    const encounterChance = clamp(0.006 + danger * 0.006 + (Number(target.distance) || 1) * 0.002 - stats.scout / 7000, 0.008, 0.11);
+    if (Math.random() < encounterChance) {
+      startTravelEncounter(target, stats, silent);
+    }
+  }
+
+  function completeTravelArrival(target, silent) {
+    const discovered = isLocationDiscovered(target);
+    state.selectedLocation = target.id;
+    state.mapRegionId = getMapRegionIdForLocation(target.id);
+    markLocationVisited(target.id);
+    state.travel = normalizeTravel(null);
+    state.progress = 0;
+    state.encounter = null;
+
+    if (!silent) {
+      addLog(discovered ? `${target.name}に到着しました。` : `未開の地を踏破し、${target.name}を発見しました。`, "win");
+    }
+    saveState(false);
+  }
+
+  function startTravelEncounter(location, stats, silent) {
+    const routeDanger = Math.max(1, Number(location.danger) || 1);
+    const enemyName = location.enemies?.length
+      ? location.enemies[randomInt(0, location.enemies.length - 1)]
+      : `${location.name}近くの魔物`;
+    const power = Math.max(8, Math.floor(getEnemyPower({ ...location, danger: routeDanger }, false) * randomFloat(0.82, 1.08)));
+    const maxHp = Math.max(28, Math.floor(power * 0.82 + routeDanger * 18 + 26));
+
+    markMonsterDiscovered(enemyName, location.id);
+    state.travel.encounter = {
+      locationId: location.id,
+      name: enemyName,
+      hp: maxHp,
+      maxHp,
+      power,
+      isStrongEnemy: false,
+      startedAt: Date.now(),
+      lastPlayerDamage: 0,
+      lastEnemyDamage: 0,
+      lastEnemyAction: "移動中の隙をうかがっています。",
+      battleLog: [{ text: `移動中に${enemyName}が襲ってきました。`, type: "warn" }],
+    };
+
+    if (!silent) {
+      addLog(`移動中に${enemyName}が襲撃。自動戦闘に入ります。`, "warn");
+    }
+  }
+
+  function getBattleCommandConfig(command) {
+    if (command === "skill") {
+      return {
+        id: "skill",
+        label: "スキル",
+        playerText: "スキル攻撃",
+        damageMultiplier: 1.62,
+        pressureMultiplier: 1.08,
+        guard: false,
+      };
+    }
+    if (command === "guard") {
+      return {
+        id: "guard",
+        label: "防御",
+        playerText: "防御反撃",
+        damageMultiplier: 0.42,
+        pressureMultiplier: 0.34,
+        guard: true,
+      };
+    }
+    return {
+      id: "attack",
+      label: "攻撃",
+      playerText: "通常攻撃",
+      damageMultiplier: 1,
+      pressureMultiplier: 1,
+      guard: false,
+    };
+  }
+
+  function getCommandDamage(stats, commandConfig) {
+    const baseDamage = stats.atk * 0.55 + stats.mag * 0.42 + stats.speed * 0.22 + stats.combat * 0.035;
+    const skillBonus = commandConfig.id === "skill" ? stats.mag * 0.22 + stats.luck * 0.08 : 0;
+    return (Math.max(5, baseDamage) + skillBonus) * commandConfig.damageMultiplier * randomFloat(0.82, 1.2);
+  }
+
+  function advanceTravelEncounter(stats, location, silent, command = "attack") {
+    const encounter = state.travel?.encounter;
+    if (!encounter) {
+      return;
+    }
+
+    const commandConfig = getBattleCommandConfig(command);
+    const damage = getCommandDamage(stats, commandConfig);
+    const dealtDamage = Math.max(1, Math.floor(damage));
+    encounter.hp = Math.max(0, encounter.hp - damage);
+    encounter.lastPlayerDamage = dealtDamage;
+    encounter.guardNext = commandConfig.guard;
+    pushBattleEvent(encounter, `${commandConfig.playerText}: ${encounter.name}に${dealtDamage}ダメージ。`, "player");
+
+    if (encounter.hp <= 0) {
+      completeTravelEncounterVictory(location, stats, encounter, silent);
+      return;
+    }
+
+    const pressureChance = clamp(encounter.power / (stats.combat + encounter.power + 220) * commandConfig.pressureMultiplier, 0.02, 0.34);
+    if (Math.random() < pressureChance) {
+      sufferTravelEncounterPressure(encounter, silent);
+    } else {
+      encounter.lastEnemyDamage = 0;
+      encounter.lastEnemyAction = `${encounter.name}の攻撃を受け流しました。`;
+      pushBattleEvent(encounter, `敵の攻撃: ${encounter.name}の攻撃を受け流した。`, "guard");
+    }
+    encounter.guardNext = false;
+  }
+
+  function completeTravelEncounterVictory(location, stats, encounter, silent) {
+    recordMonsterKill(location, encounter.name);
+    const gold = Math.floor((location.gold || 8) * randomFloat(0.35, 0.72));
+    const xp = Math.floor((location.exp || 10) * randomFloat(0.28, 0.55));
+    addResource("gold", gold);
+    applyLoot(location, stats, false);
+    applyXp(Math.max(1, xp), silent);
+    gainFamiliarXp(Math.max(1, Math.floor(xp * 0.12)));
+    addGuildReputation("adventurers", 2, true);
+    addGuildReputation(state.guild?.activeId, 1, true);
+    tryTameFamiliar(encounter, location, stats, silent);
+    gainPartyBond(1 + Math.max(1, location.danger || 1), silent, location.name);
+    state.travel.encounter = null;
+
+    if (!silent) {
+      addLog(`移動中の${encounter.name}を撃退。金貨+${gold} / 経験値+${Math.max(1, xp)}`, "win");
+    }
+  }
+
+  function sufferTravelEncounterPressure(encounter, silent) {
+    const usedPotion = state.resources.potion > 0;
+    const usedFood = !usedPotion && state.resources.food > 0;
+    const guardFactor = encounter.guardNext ? 0.45 : 1;
+    const enemyDamage = Math.max(1, Math.floor(encounter.power * randomFloat(0.08, 0.18) * guardFactor));
+    let battleResult = "";
+
+    if (usedPotion) {
+      state.resources.potion -= 1;
+      battleResult = "ポーションで立て直した";
+    } else if (usedFood) {
+      state.resources.food -= 1;
+      battleResult = "携行食で踏みとどまった";
+    } else {
+      state.travel.progress = Math.max(0, (state.travel.progress || 0) - 7);
+      battleResult = "足止めされ、移動が遅れた";
+    }
+
+    encounter.lastEnemyDamage = enemyDamage;
+    encounter.lastEnemyAction = `${encounter.name}の襲撃: 被害${enemyDamage}。${battleResult}。`;
+    pushBattleEvent(encounter, `敵の攻撃: 被害${enemyDamage}。${battleResult}。`, "enemy");
+    applyXp(Math.max(1, Math.floor(encounter.power * 0.018)), true);
+
+    if (!silent && Math.random() < 0.35) {
+      addLog(`${encounter.name}の襲撃で移動が乱されました。`, "warn");
+    }
   }
 
   function performExpeditions(stats, silent) {
@@ -3672,6 +4037,10 @@
       return;
     }
 
+    if (state.battleMode === "manual") {
+      return;
+    }
+
     advanceEncounter(stats, location, silent);
   }
 
@@ -3715,21 +4084,22 @@
     }
   }
 
-  function advanceEncounter(stats, location, silent) {
+  function advanceEncounter(stats, location, silent, command = "attack") {
     const encounter = state.encounter;
-    const baseDamage = stats.atk * 0.55 + stats.mag * 0.42 + stats.speed * 0.22 + stats.combat * 0.035;
-    const damage = Math.max(5, baseDamage) * randomFloat(0.82, 1.2);
+    const commandConfig = getBattleCommandConfig(command);
+    const damage = getCommandDamage(stats, commandConfig);
     const dealtDamage = Math.max(1, Math.floor(damage));
     encounter.hp = Math.max(0, encounter.hp - damage);
     encounter.lastPlayerDamage = dealtDamage;
-    pushBattleEvent(encounter, `味方の攻撃: ${encounter.name}に${dealtDamage}ダメージ。`, "player");
+    encounter.guardNext = commandConfig.guard;
+    pushBattleEvent(encounter, `${commandConfig.playerText}: ${encounter.name}に${dealtDamage}ダメージ。`, "player");
 
     if (encounter.hp <= 0) {
       completeEncounterVictory(location, stats, encounter, silent);
       return;
     }
 
-    const pressureChance = clamp(encounter.power / (stats.combat + encounter.power + 220), 0.03, 0.32);
+    const pressureChance = clamp(encounter.power / (stats.combat + encounter.power + 220) * commandConfig.pressureMultiplier, 0.02, 0.34);
     if (Math.random() < pressureChance) {
       sufferEncounterPressure(encounter, silent);
     } else {
@@ -3737,6 +4107,7 @@
       encounter.lastEnemyAction = `${encounter.name}の攻撃を受け流しました。`;
       pushBattleEvent(encounter, `敵の攻撃: ${encounter.name}の攻撃を受け流した。`, "guard");
     }
+    encounter.guardNext = false;
   }
 
   function completeEncounterVictory(location, stats, encounter, silent) {
@@ -3771,7 +4142,8 @@
   function sufferEncounterPressure(encounter, silent) {
     const usedPotion = state.resources.potion > 0;
     const usedFood = !usedPotion && state.resources.food > 0;
-    const enemyDamage = Math.max(1, Math.floor(encounter.power * randomFloat(0.08, 0.18)));
+    const guardFactor = encounter.guardNext ? 0.45 : 1;
+    const enemyDamage = Math.max(1, Math.floor(encounter.power * randomFloat(0.08, 0.18) * guardFactor));
     let battleResult = "";
 
     if (usedPotion) {
@@ -4840,6 +5212,68 @@
     return LOCATION_BY_ID[state.selectedLocation] || LOCATION_BY_ID.town;
   }
 
+  function getActiveTravel() {
+    state.travel = normalizeTravel(state.travel);
+    return state.travel.active ? state.travel : null;
+  }
+
+  function getTravelDuration(from, target) {
+    if (!from || !target) {
+      return 30;
+    }
+
+    const dx = (Number(target.x) || 0) - (Number(from.x) || 0);
+    const dy = (Number(target.y) || 0) - (Number(from.y) || 0);
+    const mapDistance = Math.hypot(dx, dy);
+    const baseDistance = Math.max(1, Number(target.distance) || 1);
+    const danger = Math.max(Number(from.danger) || 0, Number(target.danger) || 0, 1);
+    return Math.floor(clamp(18 + mapDistance * 14 + baseDistance * 8 + danger * 4, 18, 180));
+  }
+
+  function getTravelRouteDanger(from, target) {
+    return Math.max(Number(from?.danger) || 0, Number(target?.danger) || 0, 1);
+  }
+
+  function normalizeVisitedLocations(visitedLocations, selectedLocation, clears) {
+    const normalized = {};
+    if (visitedLocations && typeof visitedLocations === "object") {
+      for (const [locationId, visited] of Object.entries(visitedLocations)) {
+        if (visited && LOCATION_BY_ID[locationId]) {
+          normalized[locationId] = true;
+        }
+      }
+    }
+
+    normalized.town = true;
+    if (LOCATION_BY_ID[selectedLocation]) {
+      normalized[selectedLocation] = true;
+    }
+    for (const [locationId, count] of Object.entries(clears || {})) {
+      if ((Number(count) || 0) > 0 && LOCATION_BY_ID[locationId]) {
+        normalized[locationId] = true;
+      }
+    }
+    return normalized;
+  }
+
+  function markLocationVisited(locationId) {
+    state.visitedLocations = normalizeVisitedLocations(state.visitedLocations, state.selectedLocation, state.clears);
+    if (LOCATION_BY_ID[locationId]) {
+      state.visitedLocations[locationId] = true;
+    }
+  }
+
+  function isLocationDiscovered(location) {
+    return Boolean(
+      location
+        && (
+          location.id === state.selectedLocation
+          || state.visitedLocations?.[location.id]
+          || (state.clears?.[location.id] || 0) > 0
+        ),
+    );
+  }
+
   function getMapRegionIdForLocation(locationId) {
     const region = MAP_REGIONS.find((candidate) => candidate.locationIds.includes(locationId));
     return region?.id || "starter";
@@ -5304,6 +5738,7 @@
   function renderTick() {
     renderTopbar();
     renderBase();
+    renderMap();
     renderLocation();
     renderExpeditions();
     renderCraft();
@@ -5610,26 +6045,65 @@
 
   function renderMap() {
     const activeRegion = getActiveMapRegion();
-    const regionLocations = activeRegion.locationIds.map((id) => LOCATION_BY_ID[id]).filter(Boolean);
+    const travel = getActiveTravel();
+    const currentLocation = getSelectedLocation();
+    const currentX = Number(currentLocation.x) || 0;
+    const currentY = Number(currentLocation.y) || 0;
+    const regionLocations = activeRegion.locationIds
+      .map((id) => LOCATION_BY_ID[id])
+      .filter(Boolean);
+    if (!regionLocations.some((location) => location.id === currentLocation.id)) {
+      regionLocations.unshift(currentLocation);
+    }
     const regionTabs = MAP_REGIONS.map((region) => {
       const active = region.id === activeRegion.id ? "active" : "";
       return `<button type="button" class="${active}" data-action="set-map-region" data-region="${escapeAttr(region.id)}">${escapeHtml(region.name)}</button>`;
     }).join("");
+    const getPlotPosition = (location) => {
+      const x = Number(location.x) || currentX;
+      const y = Number(location.y) || currentY;
+      return {
+        left: clamp(50 + (x - currentX) * 20, 9, 91),
+        top: clamp(50 + (y - currentY) * 20, 12, 88),
+      };
+    };
+    const discoveredCount = regionLocations.filter((location) => isLocationDiscovered(location)).length;
+    const routes = regionLocations
+      .filter((location) => location.id !== currentLocation.id)
+      .map((location) => {
+        const discovered = isLocationDiscovered(location);
+        const position = getPlotPosition(location);
+        const dx = position.left - 50;
+        const dy = position.top - 50;
+        const length = clamp(Math.hypot(dx, dy), 7, 58);
+        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+        return `<span class="map-route ${discovered ? "" : "unknown"}" style="--route-angle: ${angle.toFixed(1)}deg; --route-length: ${length.toFixed(1)}%;"></span>`;
+      }).join("");
     const nodes = regionLocations.map((location) => {
       const selected = location.id === state.selectedLocation ? "selected" : "";
-      const pips = Array.from({ length: 5 }, (_, index) => `<i class="danger-pip ${index < location.danger ? "on" : ""}"></i>`).join("");
-      const status = location.danger <= 0 ? "都市" : `危険度 ${location.danger}`;
+      const travelTarget = travel?.targetId === location.id;
+      const discovered = isLocationDiscovered(location);
+      const position = getPlotPosition(location);
+      const pips = discovered
+        ? Array.from({ length: 5 }, (_, index) => `<i class="danger-pip ${index < location.danger ? "on" : ""}"></i>`).join("")
+        : '<i class="danger-pip mystery"></i><i class="danger-pip mystery"></i><i class="danger-pip mystery"></i>';
+      const status = discovered ? (location.danger <= 0 ? "都市" : `危険度 ${location.danger}`) : "未探索";
+      const name = discovered ? location.name : "未開の地";
+      const tagline = discovered ? location.tagline : "まだ踏み入れていない場所";
+      const badge = selected ? "現在地" : travelTarget ? "移動先" : discovered ? "訪問済み" : "未開";
 
       return `
         <button
           type="button"
-          class="map-node ${escapeAttr(location.tone)} ${selected}"
+          class="map-node ${escapeAttr(location.tone)} ${selected} ${travelTarget ? "target" : ""} ${discovered ? "discovered" : "unknown"}"
+          style="--map-left: ${position.left.toFixed(1)}%; --map-top: ${position.top.toFixed(1)}%;"
           data-action="select-location"
           data-location="${escapeAttr(location.id)}"
         >
+          <span class="map-node-badge">${escapeHtml(badge)}</span>
           <span class="node-top">
-            <b>${escapeHtml(location.name)}</b>
-            <span>${escapeHtml(location.tagline)}</span>
+            <b>${escapeHtml(name)}</b>
+            <span>${escapeHtml(tagline)}</span>
           </span>
           <span class="danger-row" aria-label="${escapeAttr(status)}">${pips}<em>${escapeHtml(status)}</em></span>
         </button>
@@ -5645,10 +6119,75 @@
       <div class="map-region-summary">
         <strong>${escapeHtml(activeRegion.name)}</strong>
         <span>${escapeHtml(activeRegion.desc)}</span>
-        <small>${regionLocations.length}地点</small>
+        <small>現在地: ${escapeHtml(currentLocation.name)} / 発見 ${discoveredCount}/${regionLocations.length}地点</small>
       </div>
-      <div class="map-grid">
+      <div class="map-grid" aria-label="現在地を中心にした探索マップ">
+        <span class="map-compass">N</span>
+        <span class="map-center-ring">現在地</span>
+        ${routes}
         ${nodes}
+      </div>
+    `;
+  }
+
+  function renderRpgBattlePanel(encounter, options = {}) {
+    if (!encounter) {
+      return "";
+    }
+
+    const hpPercent = clamp((encounter.hp / encounter.maxHp) * 100, 0, 100);
+    const modeLabel = state.battleMode === "auto" ? "自動ON" : "手動";
+    const partyRows = state.members.slice(0, 4).map((member, index) => {
+      const job = JOB_BY_ID[member.jobId] || JOB_BY_ID.sword;
+      const pseudoHp = clamp(88 + member.level * 1.5 - (encounter.lastEnemyDamage || 0) / (index + 2), 28, 100);
+      return `
+        <div class="rpg-party-row">
+          <span>${escapeHtml(member.name)}</span>
+          <small>Lv.${member.level} ${escapeHtml(job.name)}</small>
+          <div class="mini-meter" aria-hidden="true"><i style="--value: ${pseudoHp}%"></i></div>
+        </div>
+      `;
+    }).join("");
+    const extraMembers = state.members.length > 4 ? `<div class="rpg-party-extra">ほか${state.members.length - 4}人も後衛から支援中</div>` : "";
+    const battleEvents = (encounter.battleLog || [])
+      .map((entry) => `<div class="battle-log-line ${escapeAttr(entry.type || "info")}">${escapeHtml(entry.text)}</div>`)
+      .join("");
+
+    return `
+      <div class="battle-card rpg-battle-card active">
+        <div class="rpg-battle-top">
+          <div>
+            <div class="card-kicker">${escapeHtml(options.kicker || "RPGバトル")} / ${escapeHtml(modeLabel)}</div>
+            <h3>${escapeHtml(encounter.name)}</h3>
+            <p>${escapeHtml(options.description || "コマンドを選ぶか、自動ONで放置戦闘できます。")}</p>
+          </div>
+          <button type="button" class="${state.battleMode === "auto" ? "primary-action" : ""}" data-action="toggle-battle-auto">${state.battleMode === "auto" ? "自動OFF" : "自動ON"}</button>
+        </div>
+        <div class="rpg-battle-stage">
+          <div class="rpg-enemy-area">
+            <div class="rpg-enemy-sigil" aria-hidden="true"><span></span></div>
+            <div class="battle-hp">
+              <span>敵HP ${Math.ceil(encounter.hp)} / ${encounter.maxHp}</span>
+              <div class="progress-bar" aria-hidden="true"><i style="--value: ${hpPercent}%"></i></div>
+            </div>
+          </div>
+          <div class="rpg-party-area">
+            ${partyRows}
+            ${extraMembers}
+          </div>
+        </div>
+        <div class="rpg-command-grid">
+          <button type="button" data-action="battle-command" data-command="attack">攻撃</button>
+          <button type="button" data-action="battle-command" data-command="skill">スキル</button>
+          <button type="button" data-action="battle-command" data-command="guard">防御</button>
+        </div>
+        <div class="battle-detail-grid">
+          <span>味方の行動</span>
+          <strong>${formatNumber(encounter.lastPlayerDamage || 0)} ダメージ</strong>
+          <span>敵の行動</span>
+          <strong>${escapeHtml(encounter.lastEnemyAction || "様子を見ている")}</strong>
+        </div>
+        <div class="battle-log-mini">${battleEvents}</div>
       </div>
     `;
   }
@@ -5672,6 +6211,9 @@
     ];
     const uniqueDrops = Array.from(new Set(drops)).slice(0, 7);
     const isTown = location.danger <= 0;
+    const travel = getActiveTravel();
+    const travelTarget = travel ? LOCATION_BY_ID[travel.targetId] : null;
+    const travelFrom = travel ? LOCATION_BY_ID[travel.fromId] || location : null;
     const actionLabel = state.exploring ? "街へ戻る" : "一緒に探索";
     const actionClass = state.exploring ? "danger-action" : "primary-action";
     const bossCards = BOSS_DUNGEONS.filter((boss) => boss.locationId === location.id)
@@ -5705,33 +6247,11 @@
         </div>
       `
       : "";
-    const battleEvents = encounter
-      ? (encounter.battleLog || [])
-          .map((entry) => `<div class="battle-log-line ${escapeAttr(entry.type || "info")}">${escapeHtml(entry.text)}</div>`)
-          .join("")
-      : "";
-
     const battlePanel = encounter
-      ? `
-        <div class="battle-card active">
-          <div>
-            <div class="card-kicker">${encounter.isStrongEnemy ? "強敵遭遇" : "通常遭遇"} / 自動戦闘中</div>
-            <h3>${escapeHtml(encounter.name)}</h3>
-            <p>パーティーが自動で攻撃しています。閉じていても探索中なら戦闘は進みます。</p>
-          </div>
-          <div class="battle-hp">
-            <span>HP ${Math.ceil(encounter.hp)} / ${encounter.maxHp}</span>
-            <div class="progress-bar" aria-hidden="true"><i style="--value: ${clamp((encounter.hp / encounter.maxHp) * 100, 0, 100)}%"></i></div>
-          </div>
-          <div class="battle-detail-grid">
-            <span>味方の攻撃</span>
-            <strong>${formatNumber(encounter.lastPlayerDamage || 0)} ダメージ</strong>
-            <span>敵の攻撃</span>
-            <strong>${escapeHtml(encounter.lastEnemyAction || "様子を見ている")}</strong>
-          </div>
-          <div class="battle-log-mini">${battleEvents}</div>
-        </div>
-      `
+      ? renderRpgBattlePanel(encounter, {
+          kicker: encounter.isStrongEnemy ? "強敵遭遇" : "通常遭遇",
+          description: "コマンド選択で戦えます。自動ONならこれまで通り放置で進みます。",
+        })
       : !isTown
         ? `
           <div class="battle-card">
@@ -5743,12 +6263,51 @@
           </div>
         `
         : "";
+    const travelEncounter = travel?.encounter;
+    const travelBattlePanel = travelEncounter
+      ? renderRpgBattlePanel(travelEncounter, {
+          kicker: "道中襲撃",
+          description: "移動中に襲われています。撃退するまで移動は進みません。",
+        })
+      : "";
+    const travelPanel = travel && travelTarget
+      ? (() => {
+          const knownTarget = isLocationDiscovered(travelTarget);
+          const targetName = knownTarget ? travelTarget.name : "未開の地";
+          const remainingSeconds = Math.max(1, Math.ceil((travel.duration || 30) * (100 - travel.progress) / 100));
+          const danger = getTravelRouteDanger(travelFrom, travelTarget);
+          return `
+            <div class="travel-card">
+              <div class="travel-head">
+                <div>
+                  <div class="card-kicker">移動中 / 道中襲撃あり</div>
+                  <h3>${escapeHtml(travelFrom.name)} → ${escapeHtml(targetName)}</h3>
+                  <p>${knownTarget ? escapeHtml(travelTarget.tagline) : "まだ地図に詳しい情報がありません。到着すると正式に発見されます。"}</p>
+                </div>
+                <button type="button" class="danger-action" data-action="cancel-travel">移動中止</button>
+              </div>
+              <div class="progress-top">
+                <span>移動進行 / 残り約${remainingSeconds}秒</span>
+                <strong>${Math.floor(travel.progress)}%</strong>
+              </div>
+              <div class="progress-bar" aria-hidden="true"><i style="--value: ${clamp(travel.progress, 0, 100)}%"></i></div>
+              <div class="tag-row">
+                <span class="tag">道中危険度 ${danger}</span>
+                <span class="tag">速度 ${formatNumber(stats.speed)}</span>
+                <span class="tag">索敵 ${formatNumber(stats.scout)}</span>
+              </div>
+              ${travelBattlePanel}
+            </div>
+          `;
+        })()
+      : "";
 
     elements.locationPanel.innerHTML = `
       <div class="panel-title">
         <h2>探索指示</h2>
-        <small>${state.exploring ? "自動進行中" : "待機中"}</small>
+        <small>${travel ? "移動中" : state.exploring ? "自動進行中" : "待機中"}</small>
       </div>
+      ${travelPanel}
       <div class="location-layout">
         <div class="location-copy">
           <h3>${escapeHtml(location.name)}</h3>
@@ -5762,7 +6321,7 @@
             ${uniqueDrops.map((drop) => `<span class="tag">${escapeHtml(drop)}</span>`).join("")}
           </div>
           <div class="location-actions">
-            <button type="button" class="${actionClass}" data-action="toggle-explore" ${isTown ? "disabled" : ""}>${escapeHtml(actionLabel)}</button>
+            <button type="button" class="${actionClass}" data-action="toggle-explore" ${isTown || travel ? "disabled" : ""}>${escapeHtml(actionLabel)}</button>
             <button type="button" data-action="select-location" data-location="town">拠点へ設定</button>
           </div>
         </div>

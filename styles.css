@@ -1240,6 +1240,110 @@ select {
     #171512;
 }
 
+.rpg-battle-card {
+  gap: 12px;
+  border-color: rgba(215, 167, 77, 0.34);
+  background:
+    linear-gradient(135deg, rgba(215, 167, 77, 0.12), transparent 44%),
+    radial-gradient(circle at 72% 26%, rgba(199, 109, 95, 0.12), transparent 28%),
+    #15130f;
+}
+
+.rpg-battle-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.rpg-battle-top button {
+  flex: 0 0 auto;
+  min-width: 86px;
+}
+
+.rpg-battle-stage {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.8fr) minmax(180px, 1fr);
+  gap: 12px;
+  align-items: stretch;
+}
+
+.rpg-enemy-area,
+.rpg-party-area {
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
+  background: rgba(15, 12, 9, 0.52);
+  padding: 10px;
+}
+
+.rpg-enemy-area {
+  display: grid;
+  gap: 10px;
+  place-items: center;
+}
+
+.rpg-enemy-sigil {
+  width: min(118px, 58%);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(199, 109, 95, 0.44);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(199, 109, 95, 0.45), transparent 34%),
+    radial-gradient(circle at 50% 62%, rgba(103, 148, 190, 0.18), transparent 54%),
+    #211613;
+  box-shadow: inset 0 0 22px rgba(0, 0, 0, 0.36);
+}
+
+.rpg-enemy-sigil span {
+  width: 44%;
+  aspect-ratio: 1;
+  border: 2px solid rgba(255, 232, 198, 0.76);
+  border-top-color: transparent;
+  border-radius: 42% 58% 46% 54%;
+  transform: rotate(28deg);
+}
+
+.rpg-party-area {
+  display: grid;
+  gap: 8px;
+  align-content: center;
+}
+
+.rpg-party-row {
+  display: grid;
+  grid-template-columns: minmax(72px, 0.8fr) minmax(70px, 0.7fr) minmax(92px, 1fr);
+  gap: 8px;
+  align-items: center;
+  color: var(--paper);
+  font-size: 0.78rem;
+}
+
+.rpg-party-row small,
+.rpg-party-extra {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.rpg-command-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.rpg-command-grid button {
+  min-height: 40px;
+  border-color: rgba(215, 167, 77, 0.38);
+  background: #211a12;
+  font-weight: 800;
+}
+
+.rpg-command-grid button:hover {
+  border-color: rgba(215, 167, 77, 0.72);
+  background: #2b2115;
+}
+
 .battle-hp {
   display: grid;
   gap: 6px;
@@ -1401,10 +1505,39 @@ select {
 }
 
 .map-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
-  grid-auto-rows: minmax(104px, auto);
-  gap: 10px;
+  position: relative;
+  min-height: clamp(340px, 52vw, 520px);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(215, 167, 77, 0.14), transparent 18%),
+    radial-gradient(circle at 20% 20%, rgba(105, 183, 122, 0.12), transparent 22%),
+    radial-gradient(circle at 78% 26%, rgba(103, 169, 201, 0.10), transparent 20%),
+    radial-gradient(circle at 22% 82%, rgba(166, 138, 212, 0.10), transparent 24%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    #17140f;
+  background-size:
+    auto,
+    auto,
+    auto,
+    auto,
+    42px 42px,
+    42px 42px,
+    auto;
+  box-shadow: inset 0 0 48px rgba(0, 0, 0, 0.38);
+}
+
+.map-grid::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.035), transparent 26%),
+    radial-gradient(circle at 50% 50%, transparent 0 28%, rgba(16, 13, 10, 0.28) 64%, rgba(16, 13, 10, 0.52));
+  z-index: 0;
 }
 
 .map-region-tabs {
@@ -1448,16 +1581,22 @@ select {
 }
 
 .map-node {
-  position: relative;
   display: grid;
   align-content: space-between;
-  min-height: 104px;
+  min-height: 96px;
+  width: clamp(122px, 24%, 178px);
   padding: 10px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #1c1814;
   color: var(--text);
   text-align: left;
+  position: absolute;
+  left: var(--map-left);
+  top: var(--map-top);
+  transform: translate(-50%, -50%);
+  z-index: 3;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.24);
 }
 
 .map-node::before {
@@ -1467,11 +1606,133 @@ select {
   border: 1px solid rgba(255, 255, 255, 0.04);
   border-radius: 6px;
   pointer-events: none;
+  z-index: 1;
 }
 
 .map-node.selected {
   border-color: var(--gold);
-  box-shadow: inset 0 0 0 1px rgba(215, 167, 77, 0.42);
+  z-index: 6;
+  transform: translate(-50%, -50%) scale(1.06);
+  box-shadow:
+    0 0 0 4px rgba(215, 167, 77, 0.13),
+    inset 0 0 0 1px rgba(215, 167, 77, 0.42),
+    0 18px 30px rgba(0, 0, 0, 0.28);
+}
+
+.map-node.unknown {
+  border-color: rgba(186, 173, 153, 0.26);
+  border-style: dashed;
+  color: #b9afa0;
+  background:
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.035) 0 6px, transparent 6px 13px),
+    radial-gradient(circle at 35% 28%, rgba(186, 173, 153, 0.10), transparent 44%),
+    #14120f;
+}
+
+.map-node.unknown::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(circle at 35% 35%, transparent 0 18%, rgba(20, 18, 15, 0.36) 54%, rgba(20, 18, 15, 0.68)),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.03), transparent);
+}
+
+.map-node-badge {
+  position: absolute;
+  top: -9px;
+  right: 8px;
+  z-index: 2;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 999px;
+  padding: 2px 7px;
+  color: var(--muted);
+  background: #18140f;
+  font-size: 0.66rem;
+  font-weight: 800;
+}
+
+.map-node.selected .map-node-badge {
+  border-color: rgba(215, 167, 77, 0.62);
+  color: #fff1c9;
+  background: #4a351b;
+}
+
+.map-node.target {
+  border-color: rgba(103, 169, 201, 0.82);
+  box-shadow:
+    0 0 0 4px rgba(103, 169, 201, 0.12),
+    0 14px 28px rgba(0, 0, 0, 0.28);
+}
+
+.map-node.target .map-node-badge {
+  border-color: rgba(103, 169, 201, 0.68);
+  color: #d6effa;
+  background: #203846;
+}
+
+.map-node.unknown .map-node-badge {
+  color: #cfc6b7;
+  background: #252019;
+}
+
+.map-route {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--route-length);
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(215, 167, 77, 0.62), rgba(215, 167, 77, 0.12));
+  transform: rotate(var(--route-angle));
+  transform-origin: left center;
+  z-index: 1;
+}
+
+.map-route.unknown {
+  height: 2px;
+  background: repeating-linear-gradient(90deg, rgba(186, 173, 153, 0.46) 0 8px, transparent 8px 14px);
+  opacity: 0.62;
+}
+
+.map-compass,
+.map-center-ring {
+  position: absolute;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.map-compass {
+  top: 12px;
+  right: 12px;
+  width: 34px;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(215, 167, 77, 0.42);
+  border-radius: 50%;
+  color: #f4d99a;
+  background: rgba(24, 20, 15, 0.82);
+  font-size: 0.74rem;
+  font-weight: 900;
+}
+
+.map-center-ring {
+  left: 50%;
+  top: 50%;
+  width: 132px;
+  aspect-ratio: 1;
+  border: 1px dashed rgba(215, 167, 77, 0.28);
+  border-radius: 50%;
+  color: rgba(244, 217, 154, 0.48);
+  display: grid;
+  place-items: center;
+  transform: translate(-50%, -50%);
+  font-size: 0.72rem;
+  font-weight: 800;
 }
 
 .map-node.town {
@@ -1553,8 +1814,16 @@ select {
     #141d16;
 }
 
+.map-node.unknown {
+  background:
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.035) 0 6px, transparent 6px 13px),
+    radial-gradient(circle at 35% 28%, rgba(186, 173, 153, 0.10), transparent 44%),
+    #14120f;
+}
+
 .node-top {
   position: relative;
+  z-index: 2;
 }
 
 .node-top b {
@@ -1570,6 +1839,8 @@ select {
 }
 
 .danger-row {
+  position: relative;
+  z-index: 2;
   display: flex;
   gap: 3px;
   align-items: center;
@@ -1582,6 +1853,11 @@ select {
   color: var(--muted);
   font-size: 0.72rem;
   font-style: normal;
+}
+
+.danger-pip.mystery {
+  border-color: rgba(186, 173, 153, 0.42);
+  background: rgba(186, 173, 153, 0.18);
 }
 
 .danger-pip {
@@ -1717,6 +1993,45 @@ select {
   border-radius: 8px;
   background: #18140f;
   padding: 12px;
+}
+
+.travel-card {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+  border: 1px solid rgba(103, 169, 201, 0.44);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(103, 169, 201, 0.14), transparent 48%),
+    #171613;
+  padding: 12px;
+}
+
+.travel-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.travel-head h3,
+.travel-head p {
+  margin: 0;
+}
+
+.travel-head h3 {
+  color: var(--paper);
+  font-size: 1.02rem;
+}
+
+.travel-head p {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.travel-head button {
+  flex: 0 0 auto;
 }
 
 .progress-top {
@@ -2273,6 +2588,7 @@ select {
   .right-column,
   .base-summary,
   .craft-layout,
+  .rpg-battle-stage,
   .location-layout,
   .story-layout {
     grid-template-columns: 1fr;
@@ -2374,9 +2690,16 @@ select {
 
   .panel-title,
   .craft-section-head,
+  .rpg-battle-top,
+  .travel-head,
   .member-line {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .rpg-party-row,
+  .rpg-command-grid {
+    grid-template-columns: 1fr;
   }
 
   .craft-section-meta {
