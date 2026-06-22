@@ -6049,12 +6049,28 @@
     const currentLocation = getSelectedLocation();
     const currentX = Number(currentLocation.x) || 0;
     const currentY = Number(currentLocation.y) || 0;
-    const regionLocations = activeRegion.locationIds
-      .map((id) => LOCATION_BY_ID[id])
-      .filter(Boolean);
-    if (!regionLocations.some((location) => location.id === currentLocation.id)) {
-      regionLocations.unshift(currentLocation);
+    const targetLocation = travel?.targetId ? LOCATION_BY_ID[travel.targetId] : null;
+    const localWindowLimit = 12;
+    const localWindowRadius = 3.2;
+    const distanceFromCurrent = (location) => {
+      const dx = (Number(location.x) || 0) - currentX;
+      const dy = (Number(location.y) || 0) - currentY;
+      return Math.hypot(dx, dy);
+    };
+    const forcedLocationIds = new Set([currentLocation.id, targetLocation?.id].filter(Boolean));
+    const localLocations = LOCATIONS
+      .map((location) => ({ location, distance: distanceFromCurrent(location) }))
+      .filter(({ location, distance }) => forcedLocationIds.has(location.id) || distance <= localWindowRadius)
+      .sort((a, b) => a.distance - b.distance || (a.location.danger || 0) - (b.location.danger || 0))
+      .slice(0, localWindowLimit)
+      .map(({ location }) => location);
+    for (const locationId of forcedLocationIds) {
+      const forcedLocation = LOCATION_BY_ID[locationId];
+      if (forcedLocation && !localLocations.some((location) => location.id === locationId)) {
+        localLocations.push(forcedLocation);
+      }
     }
+    const regionLocations = localLocations;
     const regionTabs = MAP_REGIONS.map((region) => {
       const active = region.id === activeRegion.id ? "active" : "";
       return `<button type="button" class="${active}" data-action="set-map-region" data-region="${escapeAttr(region.id)}">${escapeHtml(region.name)}</button>`;
@@ -6068,6 +6084,10 @@
       };
     };
     const discoveredCount = regionLocations.filter((location) => isLocationDiscovered(location)).length;
+    const visibleRegionNames = Array.from(new Set(regionLocations.map((location) => {
+      const region = MAP_REGION_BY_ID[getMapRegionIdForLocation(location.id)];
+      return region?.name || activeRegion.name;
+    }))).slice(0, 4);
     const routes = regionLocations
       .filter((location) => location.id !== currentLocation.id)
       .map((location) => {
@@ -6143,9 +6163,9 @@
       </div>
       <div class="map-region-tabs">${regionTabs}</div>
       <div class="map-region-summary">
-        <strong>${escapeHtml(activeRegion.name)}</strong>
-        <span>${escapeHtml(activeRegion.desc)}</span>
-        <small>現在地: ${escapeHtml(currentLocation.name)} / 発見 ${discoveredCount}/${regionLocations.length}地点</small>
+        <strong>現在地周辺</strong>
+        <span>${escapeHtml(visibleRegionNames.join(" / "))}</span>
+        <small>現在地: ${escapeHtml(currentLocation.name)} / 周辺表示 ${regionLocations.length}地点 / 発見 ${discoveredCount}地点</small>
       </div>
       <div class="map-grid" aria-label="現在地を中心にした探索マップ">
         <span class="map-compass">N</span>

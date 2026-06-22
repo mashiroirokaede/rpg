@@ -1,4 +1,4 @@
-const CACHE_NAME = "starlight-rpg-v21";
+const CACHE_NAME = "starlight-rpg-v22";
 const APP_SHELL = [
   "./",
   "./index.html",
