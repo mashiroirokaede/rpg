@@ -6079,13 +6079,37 @@
         const angle = Math.atan2(dy, dx) * 180 / Math.PI;
         return `<span class="map-route ${discovered ? "" : "unknown"}" style="--route-angle: ${angle.toFixed(1)}deg; --route-length: ${length.toFixed(1)}%;"></span>`;
       }).join("");
-    const nodes = regionLocations.map((location) => {
+    const nodes = regionLocations.map((location, index) => {
       const selected = location.id === state.selectedLocation ? "selected" : "";
       const travelTarget = travel?.targetId === location.id;
       const discovered = isLocationDiscovered(location);
       const position = getPlotPosition(location);
+      const status = discovered ? (location.danger <= 0 ? "都市" : `危険度 ${location.danger}`) : "未探索";
+      const name = discovered ? location.name : "未開の地";
+      const badge = selected ? "現在地" : travelTarget ? "移動先" : discovered ? "訪問済み" : "未開";
+      const markerText = selected ? "◎" : travelTarget ? "◆" : String(index + 1);
+
+      return `
+        <button
+          type="button"
+          class="map-node ${escapeAttr(location.tone)} ${selected} ${travelTarget ? "target" : ""} ${discovered ? "discovered" : "unknown"}"
+          style="--map-left: ${position.left.toFixed(1)}%; --map-top: ${position.top.toFixed(1)}%;"
+          data-action="select-location"
+          data-location="${escapeAttr(location.id)}"
+          aria-label="${escapeAttr(`${name} / ${badge} / ${status}`)}"
+          title="${escapeAttr(`${name} / ${badge} / ${status}`)}"
+        >
+          <span class="map-node-badge">${escapeHtml(badge)}</span>
+          <span class="map-marker-core">${escapeHtml(markerText)}</span>
+        </button>
+      `;
+    }).join("");
+    const locationRows = regionLocations.map((location, index) => {
+      const selected = location.id === state.selectedLocation ? "selected" : "";
+      const travelTarget = travel?.targetId === location.id;
+      const discovered = isLocationDiscovered(location);
       const pips = discovered
-        ? Array.from({ length: 5 }, (_, index) => `<i class="danger-pip ${index < location.danger ? "on" : ""}"></i>`).join("")
+        ? Array.from({ length: 5 }, (_, dangerIndex) => `<i class="danger-pip ${dangerIndex < location.danger ? "on" : ""}"></i>`).join("")
         : '<i class="danger-pip mystery"></i><i class="danger-pip mystery"></i><i class="danger-pip mystery"></i>';
       const status = discovered ? (location.danger <= 0 ? "都市" : `危険度 ${location.danger}`) : "未探索";
       const name = discovered ? location.name : "未開の地";
@@ -6095,17 +6119,19 @@
       return `
         <button
           type="button"
-          class="map-node ${escapeAttr(location.tone)} ${selected} ${travelTarget ? "target" : ""} ${discovered ? "discovered" : "unknown"}"
-          style="--map-left: ${position.left.toFixed(1)}%; --map-top: ${position.top.toFixed(1)}%;"
+          class="map-place-row ${selected} ${travelTarget ? "target" : ""} ${discovered ? "discovered" : "unknown"}"
           data-action="select-location"
           data-location="${escapeAttr(location.id)}"
         >
-          <span class="map-node-badge">${escapeHtml(badge)}</span>
-          <span class="node-top">
+          <span class="map-place-index">${index + 1}</span>
+          <span class="map-place-copy">
             <b>${escapeHtml(name)}</b>
-            <span>${escapeHtml(tagline)}</span>
+            <small>${escapeHtml(tagline)}</small>
           </span>
-          <span class="danger-row" aria-label="${escapeAttr(status)}">${pips}<em>${escapeHtml(status)}</em></span>
+          <span class="map-place-status">
+            <em>${escapeHtml(badge)}</em>
+            <span class="danger-row" aria-label="${escapeAttr(status)}">${pips}<em>${escapeHtml(status)}</em></span>
+          </span>
         </button>
       `;
     }).join("");
@@ -6127,6 +6153,7 @@
         ${routes}
         ${nodes}
       </div>
+      <div class="map-place-list">${locationRows}</div>
     `;
   }
 
