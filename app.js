@@ -4,6 +4,9 @@
   const STORAGE_KEY = "starlight_idle_hack_rpg_v1";
   const FIREBASE_CONFIG_STORAGE_KEY = "starlight_firebase_config_v1";
   const FIREBASE_SDK_VERSION = "12.15.0";
+  const MANGA_PANEL_LIMIT = 8;
+  const EXPLORE_PANEL_LIMIT = 8;
+  const SKILL_LOG_LIMIT = 50;
 
   const CATEGORY_LABELS = {
     combat: "戦闘職",
@@ -1333,6 +1336,531 @@
 
   const SKILL_NODE_BY_ID = Object.fromEntries(SKILL_TREE_NODES.map((node) => [node.id, node]));
 
+  const SKILL_TIER_LABELS = {
+    basic: "基礎スキル",
+    advanced: "発展スキル",
+    personal: "個性スキル",
+    unique: "固有スキル",
+    awakened: "覚醒スキル",
+    mythic: "神話スキル",
+    resistance: "耐性スキル",
+    title: "称号",
+    blessing: "加護",
+  };
+
+  const SKILL_CATEGORY_LABELS = {
+    analyze: "解析",
+    combat: "戦闘",
+    guard: "防御",
+    heal: "回復",
+    craft: "生産",
+    gather: "採取",
+    support: "支援",
+    resistance: "耐性",
+    title: "称号",
+    blessing: "加護",
+  };
+
+  const SKILL_DEFS = {
+    starlight_analysis: {
+      id: "starlight_analysis",
+      name: "星灯りの解析眼",
+      tier: "unique",
+      category: "analyze",
+      type: "passive",
+      maxLevel: 10,
+      description: "敵の予兆や探索中の異変を見抜きやすくなる。",
+      trigger: "観察、探索シーン、敵の予兆",
+      tags: ["analyze", "scout", "battle", "explore"],
+      effects: { revealTelegraph: 0.15, rareFindRate: 0.03, momentumBonus: 3 },
+      evolveTo: "starlight_wisdom",
+      evolveCondition: { level: 10, bossKills: 3, visitedLocations: 6 },
+    },
+    magic_core_cycle: {
+      id: "magic_core_cycle",
+      name: "魔核循環",
+      tier: "basic",
+      category: "combat",
+      type: "passive",
+      maxLevel: 10,
+      description: "戦闘勝利時にスキル経験値を少し多く得る。",
+      trigger: "戦闘勝利、ボス討伐",
+      tags: ["battle", "growth", "magic"],
+      effects: { skillExpBonus: 0.08, tensionBonus: 2 },
+      evolveTo: "magic_furnace_core",
+      evolveCondition: { level: 10, bossKills: 3 },
+    },
+    flash_step: {
+      id: "flash_step",
+      name: "瞬歩",
+      tier: "basic",
+      category: "combat",
+      type: "passive",
+      maxLevel: 10,
+      description: "回避、先制、間合い調整が少し得意になる。",
+      trigger: "戦闘中、探索進行",
+      tags: ["battle", "speed", "explore"],
+      effects: { dodgeRate: 0.05, speedBonus: 0.03, momentumBonus: 2 },
+    },
+    ironwall: {
+      id: "ironwall",
+      name: "鉄壁化",
+      tier: "basic",
+      category: "guard",
+      type: "passive",
+      maxLevel: 10,
+      description: "防御時の被害と戦況低下を抑える。",
+      trigger: "受け流し、防御成功、被弾",
+      tags: ["battle", "guard", "resist"],
+      effects: { damageReduction: 0.05, guardMomentum: 3 },
+    },
+    healing_light: {
+      id: "healing_light",
+      name: "癒光",
+      tier: "basic",
+      category: "heal",
+      type: "passive",
+      maxLevel: 10,
+      description: "消耗時の立て直しと敗北時の損失軽減に働く。",
+      trigger: "被弾、支援、親愛上昇",
+      tags: ["heal", "support", "battle"],
+      effects: { lossReduction: 0.05, supportRate: 0.03 },
+    },
+    spark_art: {
+      id: "spark_art",
+      name: "火花術",
+      tier: "basic",
+      category: "combat",
+      type: "active",
+      maxLevel: 10,
+      description: "戦闘中、小さな火花で追加ダメージを与えることがある。",
+      trigger: "攻撃、必殺技",
+      tags: ["battle", "fire", "magic"],
+      effects: { bonusDamageRate: 0.08, bonusDamageScale: 0.08 },
+      evolveTo: "azure_flame_barrage",
+      evolveCondition: { level: 10 },
+    },
+    shadow_pin: {
+      id: "shadow_pin",
+      name: "影踏み",
+      tier: "basic",
+      category: "combat",
+      type: "active",
+      maxLevel: 10,
+      description: "敵の踏み込みを鈍らせ、戦況を少し引き寄せる。",
+      trigger: "敵の予兆、大技",
+      tags: ["battle", "shadow", "interrupt"],
+      effects: { interruptRate: 0.08, momentumBonus: 4 },
+      evolveTo: "shadow_stitch_dance",
+      evolveCondition: { level: 10 },
+    },
+    trap_reading: {
+      id: "trap_reading",
+      name: "罠読み",
+      tier: "basic",
+      category: "analyze",
+      type: "passive",
+      maxLevel: 10,
+      description: "探索中の危険な気配を読み取り、罠や奇襲を避けやすくなる。",
+      trigger: "探索シーン、道中襲撃",
+      tags: ["explore", "trap", "scout"],
+      effects: { trapAvoidRate: 0.08, ambushReduction: 0.04 },
+      evolveTo: "danger_foresight",
+      evolveCondition: { level: 8, requiredSkills: { starlight_analysis: 5 } },
+    },
+    herb_scent: {
+      id: "herb_scent",
+      name: "薬草嗅ぎ",
+      tier: "basic",
+      category: "gather",
+      type: "passive",
+      maxLevel: 10,
+      description: "薬草や回復素材の気配を見つけやすい。",
+      trigger: "採取、探索シーン",
+      tags: ["explore", "gather", "herb"],
+      effects: { herbFindRate: 0.12, gatherBonus: 0.03 },
+    },
+    smith_soul: {
+      id: "smith_soul",
+      name: "鍛冶魂",
+      tier: "personal",
+      category: "craft",
+      type: "passive",
+      maxLevel: 10,
+      description: "クラフトや装備強化で品質を引き上げる感覚が育つ。",
+      trigger: "クラフト、強化、進化",
+      tags: ["craft", "forge", "equipment"],
+      effects: { craftBonus: 0.04, qualityRate: 0.04 },
+    },
+    poison_resistance: {
+      id: "poison_resistance",
+      name: "毒耐性",
+      tier: "resistance",
+      category: "resistance",
+      type: "passive",
+      maxLevel: 10,
+      description: "毒や薬害に近い消耗を受けた時に育ち、被害を軽減する。",
+      trigger: "毒系被害、素材事故",
+      tags: ["resistance", "poison"],
+      effects: { poisonReduction: 0.06 },
+    },
+    flame_resistance: {
+      id: "flame_resistance",
+      name: "炎耐性",
+      tier: "resistance",
+      category: "resistance",
+      type: "passive",
+      maxLevel: 10,
+      description: "火や熱を帯びた被害を受けた時に育つ。",
+      trigger: "火系被害、火花術使用",
+      tags: ["resistance", "fire"],
+      effects: { fireReduction: 0.06 },
+    },
+    sleep_resistance: {
+      id: "sleep_resistance",
+      name: "眠り耐性",
+      tier: "resistance",
+      category: "resistance",
+      type: "passive",
+      maxLevel: 10,
+      description: "行動不能や眠気に近い妨害を受けた時に育つ。",
+      trigger: "行動妨害、長時間探索",
+      tags: ["resistance", "sleep"],
+      effects: { controlReduction: 0.06 },
+    },
+    physical_resistance: {
+      id: "physical_resistance",
+      name: "物理耐性",
+      tier: "resistance",
+      category: "resistance",
+      type: "passive",
+      maxLevel: 10,
+      description: "直接攻撃を受けるほど体勢の崩れを抑えやすくなる。",
+      trigger: "通常被害、反撃被害",
+      tags: ["resistance", "physical", "guard"],
+      effects: { physicalReduction: 0.04, momentumGuard: 2 },
+    },
+    curse_resistance: {
+      id: "curse_resistance",
+      name: "呪い耐性",
+      tier: "resistance",
+      category: "resistance",
+      type: "passive",
+      maxLevel: 10,
+      description: "不穏な魔力やボスの圧に晒されるほど育つ。",
+      trigger: "ボス、強敵、魔力被害",
+      tags: ["resistance", "curse", "boss"],
+      effects: { curseReduction: 0.05 },
+    },
+    lovebind_blessing: {
+      id: "lovebind_blessing",
+      name: "恋結びの加護",
+      tier: "blessing",
+      category: "blessing",
+      type: "passive",
+      maxLevel: 10,
+      description: "親愛上昇とヒロイン支援の発動率を少し高める。",
+      trigger: "親愛上昇、仲間支援",
+      tags: ["bond", "support", "blessing"],
+      effects: { bondBonus: 0.04, supportRate: 0.04 },
+    },
+    pioneer_title: {
+      id: "pioneer_title",
+      name: "開拓者の称号",
+      tier: "title",
+      category: "title",
+      type: "passive",
+      maxLevel: 10,
+      description: "探索・採取・拠点素材の扱いに小さな補正を得る。",
+      trigger: "探索、採取、新エリア到達",
+      tags: ["title", "explore", "gather", "base"],
+      effects: { gatherBonus: 0.04, rareFindRate: 0.02 },
+    },
+    starlight_wisdom: {
+      id: "starlight_wisdom",
+      name: "星灯りの叡智",
+      tier: "awakened",
+      category: "analyze",
+      type: "passive",
+      maxLevel: 12,
+      description: "解析眼が進化した力。予兆と隠れた道をより深く読める。",
+      trigger: "解析眼の進化",
+      tags: ["analyze", "awakened", "battle", "explore"],
+      effects: { revealTelegraph: 0.24, rareFindRate: 0.05, momentumBonus: 5 },
+    },
+    life_ward: {
+      id: "life_ward",
+      name: "生命の結界",
+      tier: "awakened",
+      category: "guard",
+      type: "passive",
+      maxLevel: 12,
+      description: "癒光と鉄壁化が結びつき、仲間を守る結界へ昇華した力。",
+      trigger: "癒光と鉄壁化の統合",
+      tags: ["guard", "heal", "support", "awakened"],
+      effects: { damageReduction: 0.08, supportRate: 0.05, lossReduction: 0.08 },
+    },
+    azure_flame_barrage: {
+      id: "azure_flame_barrage",
+      name: "蒼炎連弾",
+      tier: "advanced",
+      category: "combat",
+      type: "active",
+      maxLevel: 12,
+      description: "火花術が進化した連撃。発動時に追加ダメージと緊張上昇を得る。",
+      trigger: "火花術の進化、攻撃",
+      tags: ["battle", "fire", "magic", "advanced"],
+      effects: { bonusDamageRate: 0.11, bonusDamageScale: 0.12, tensionBonus: 3 },
+    },
+    shadow_stitch_dance: {
+      id: "shadow_stitch_dance",
+      name: "影縫い乱舞",
+      tier: "advanced",
+      category: "combat",
+      type: "active",
+      maxLevel: 12,
+      description: "影踏みが進化した妨害術。大技の妨害と戦況上昇に強い。",
+      trigger: "影踏みの進化、敵の大技",
+      tags: ["battle", "shadow", "interrupt", "advanced"],
+      effects: { interruptRate: 0.13, momentumBonus: 6 },
+    },
+    magic_furnace_core: {
+      id: "magic_furnace_core",
+      name: "魔導炉心",
+      tier: "awakened",
+      category: "combat",
+      type: "passive",
+      maxLevel: 12,
+      description: "魔核循環が進化した成長炉。勝利時のスキル経験値がさらに伸びる。",
+      trigger: "魔核循環の進化、ボス討伐",
+      tags: ["battle", "growth", "magic", "awakened"],
+      effects: { skillExpBonus: 0.14, tensionBonus: 4 },
+    },
+    danger_foresight: {
+      id: "danger_foresight",
+      name: "危険予知",
+      tier: "advanced",
+      category: "analyze",
+      type: "passive",
+      maxLevel: 12,
+      description: "罠読みと解析の経験から、危険な流れを先に察知する。",
+      trigger: "罠読みの進化、探索シーン",
+      tags: ["explore", "trap", "scout", "advanced"],
+      effects: { trapAvoidRate: 0.14, ambushReduction: 0.07, rareFindRate: 0.02 },
+    },
+    shadow_runner: {
+      id: "shadow_runner",
+      name: "影走り",
+      tier: "advanced",
+      category: "combat",
+      type: "passive",
+      maxLevel: 12,
+      description: "瞬歩と影踏みが統合し、敵の背後へ回る動きが鋭くなる。",
+      trigger: "瞬歩と影踏みの統合",
+      tags: ["battle", "speed", "shadow"],
+      effects: { dodgeRate: 0.08, momentumBonus: 5, speedBonus: 0.04 },
+    },
+    herb_poison_lore: {
+      id: "herb_poison_lore",
+      name: "薬毒知識",
+      tier: "advanced",
+      category: "gather",
+      type: "passive",
+      maxLevel: 12,
+      description: "薬草嗅ぎと毒耐性が統合し、素材の薬効と危険性を読める。",
+      trigger: "薬草嗅ぎと毒耐性の統合",
+      tags: ["gather", "herb", "poison", "advanced"],
+      effects: { herbFindRate: 0.15, poisonReduction: 0.08, gatherBonus: 0.04 },
+    },
+    magic_forging_talent: {
+      id: "magic_forging_talent",
+      name: "魔鍛冶の才",
+      tier: "personal",
+      category: "craft",
+      type: "passive",
+      maxLevel: 12,
+      description: "鍛冶魂と魔核循環が統合し、魔力を帯びた加工が得意になる。",
+      trigger: "鍛冶魂と魔核循環の統合",
+      tags: ["craft", "forge", "magic"],
+      effects: { craftBonus: 0.07, qualityRate: 0.07, skillExpBonus: 0.04 },
+    },
+    pioneer_intuition: {
+      id: "pioneer_intuition",
+      name: "開拓者の直感",
+      tier: "mythic",
+      category: "analyze",
+      type: "passive",
+      maxLevel: 15,
+      description: "称号、解析、罠読みが重なった稀な直感。未知の地で小さく光る。",
+      trigger: "複数スキルの統合",
+      tags: ["mythic", "explore", "analyze", "title"],
+      effects: { rareFindRate: 0.07, trapAvoidRate: 0.12, momentumBonus: 4 },
+    },
+    prayer_blessing: {
+      id: "prayer_blessing",
+      name: "祈りの加護",
+      tier: "blessing",
+      category: "blessing",
+      type: "passive",
+      maxLevel: 10,
+      description: "回復系の仲間が祈りを重ね、支援と損失軽減が少し伸びる。",
+      trigger: "回復支援、親愛上昇",
+      tags: ["heal", "support", "blessing"],
+      effects: { supportRate: 0.04, lossReduction: 0.04 },
+    },
+    sniper_sense: {
+      id: "sniper_sense",
+      name: "狙撃勘",
+      tier: "personal",
+      category: "combat",
+      type: "passive",
+      maxLevel: 10,
+      description: "遠距離から敵の隙を拾い、予兆の発見と小ダメージに寄与する。",
+      trigger: "観察、遠距離戦、支援",
+      tags: ["battle", "scout", "ranged"],
+      effects: { revealTelegraph: 0.08, bonusDamageRate: 0.06, bonusDamageScale: 0.06 },
+    },
+    ambush_art: {
+      id: "ambush_art",
+      name: "奇襲術",
+      tier: "basic",
+      category: "combat",
+      type: "active",
+      maxLevel: 10,
+      description: "戦闘の始まりや援護時に敵の体勢を崩しやすい。",
+      trigger: "遭遇、仲間支援",
+      tags: ["battle", "support", "speed"],
+      effects: { momentumBonus: 3, bonusDamageRate: 0.05 },
+    },
+  };
+
+  const EXTERNAL_SKILL_DATA = window.STARLIGHT_SKILL_DATA || {};
+  const SKILL_RANKS = EXTERNAL_SKILL_DATA.ranks || {
+    common: { id: "common", name: "コモンスキル", order: 1, colorClass: "rank-common" },
+    extra: { id: "extra", name: "エクストラスキル", order: 2, colorClass: "rank-extra" },
+    unique: { id: "unique", name: "ユニークスキル", order: 3, colorClass: "rank-unique" },
+    ultimate: { id: "ultimate", name: "アルティメットスキル", order: 4, colorClass: "rank-ultimate" },
+  };
+  const SKILL_RANK_ORDER = Object.values(SKILL_RANKS).sort((a, b) => (a.order || 0) - (b.order || 0)).map((rank) => rank.id);
+  const SKILL_RANK_LABELS = Object.fromEntries(SKILL_RANK_ORDER.map((rank) => [rank, SKILL_RANKS[rank]?.name || rank]));
+  const SKILL_DOMAIN_LABELS = EXTERNAL_SKILL_DATA.domainLabels || {
+    battle: "戦闘",
+    magic: "魔法",
+    defense: "防御",
+    mobility: "移動・回避",
+    analyze: "解析",
+    explore: "探索",
+    gather: "採取",
+    craft: "クラフト",
+    social: "親愛・交渉",
+    familiar: "使い魔",
+    resistance: "耐性",
+    growth: "成長",
+    boss: "ボス",
+    support: "仲間支援",
+    economy: "市場・取引",
+    story: "物語・称号",
+  };
+  const SKILL_EQUIP_LIMITS = { common: 10, extra: 8, unique: 3, ultimate: 1 };
+  const SKILL_ALWAYS_ON_DOMAINS = new Set(["resistance"]);
+  const SKILL_ID_ALIASES = EXTERNAL_SKILL_DATA.aliases || {};
+  Object.assign(SKILL_TIER_LABELS, SKILL_RANK_LABELS);
+  Object.assign(SKILL_CATEGORY_LABELS, SKILL_DOMAIN_LABELS);
+  if (EXTERNAL_SKILL_DATA.defs && Object.keys(EXTERNAL_SKILL_DATA.defs).length) {
+    Object.keys(SKILL_DEFS).forEach((skillId) => delete SKILL_DEFS[skillId]);
+    Object.assign(SKILL_DEFS, EXTERNAL_SKILL_DATA.defs);
+  }
+  const SKILL_DEFINITION_VALIDATION = validateSkillDefinitions();
+  if (!SKILL_DEFINITION_VALIDATION.ok) {
+    console.warn("Skill definition validation warnings:", SKILL_DEFINITION_VALIDATION.errors, SKILL_DEFINITION_VALIDATION.counts);
+  }
+  const SKILL_DEF_LIST = Object.values(SKILL_DEFS);
+  const SKILL_DEF_BY_ID = SKILL_DEFS;
+  const SKILL_MERGE_RULES = [
+    { id: "merge_shadow_runner", required: { flash_step: 5, shadow_pin: 5 }, grant: "shadow_runner" },
+    { id: "merge_life_ward", required: { healing_light: 5, ironwall: 5 }, grant: "life_ward" },
+    { id: "merge_herb_poison", required: { herb_scent: 4, poison_resistance: 3 }, grant: "herb_poison_lore" },
+    { id: "merge_magic_forge", required: { smith_soul: 4, magic_core_cycle: 4 }, grant: "magic_forging_talent" },
+    { id: "merge_pioneer_intuition", required: { starlight_analysis: 6, trap_reading: 5, pioneer_title: 3 }, grant: "pioneer_intuition" },
+  ];
+
+  const PLAYER_STARTING_SKILLS = ["starlight_analysis", "magic_core_cycle", "pioneer_title"];
+  const PROFILE_SKILL_PRESETS = {
+    healer: ["healing_light", "prayer_blessing"],
+    ranger: ["trap_reading", "sniper_sense"],
+    smith: ["smith_soul"],
+    shinobi: ["flash_step", "shadow_pin", "ambush_art"],
+    alchemist: ["spark_art", "herb_scent"],
+    knight: ["ironwall", "physical_resistance"],
+    cook: ["healing_light", "herb_scent"],
+    mage: ["spark_art", "magic_core_cycle"],
+    scout: ["trap_reading", "flash_step"],
+    jeweler: ["lovebind_blessing"],
+    hunter: ["trap_reading", "sniper_sense"],
+    summoner: ["magic_core_cycle", "spark_art"],
+  };
+
+  const JOB_SKILL_PRESETS = {
+    sword: ["flash_step"],
+    cleric: ["healing_light"],
+    brawler: ["flash_step", "physical_resistance"],
+    lancer: ["flash_step"],
+    dualist: ["flash_step", "ambush_art"],
+    guardian: ["ironwall"],
+    paladin: ["ironwall", "healing_light"],
+    gunner: ["sniper_sense"],
+    archer: ["sniper_sense"],
+    hunter: ["sniper_sense", "trap_reading"],
+    scout: ["trap_reading", "flash_step"],
+    shinobi: ["shadow_pin", "flash_step"],
+    mage: ["spark_art", "magic_core_cycle"],
+    summoner: ["magic_core_cycle"],
+    tamer: ["trap_reading", "lovebind_blessing"],
+    blacksmith: ["smith_soul"],
+    alchemist: ["herb_scent", "poison_resistance"],
+    herbalist: ["herb_scent"],
+    cook: ["healing_light"],
+  };
+
+  if (Array.isArray(EXTERNAL_SKILL_DATA.mergeRules)) {
+    SKILL_MERGE_RULES.splice(0, SKILL_MERGE_RULES.length, ...EXTERNAL_SKILL_DATA.mergeRules);
+  }
+  if (Array.isArray(EXTERNAL_SKILL_DATA.startingSkills)) {
+    PLAYER_STARTING_SKILLS.splice(0, PLAYER_STARTING_SKILLS.length, ...EXTERNAL_SKILL_DATA.startingSkills.filter((skillId) => getSkillDef(skillId)?.rank === "common"));
+  }
+  if (EXTERNAL_SKILL_DATA.profilePresets && typeof EXTERNAL_SKILL_DATA.profilePresets === "object") {
+    Object.assign(PROFILE_SKILL_PRESETS, EXTERNAL_SKILL_DATA.profilePresets);
+  }
+  if (EXTERNAL_SKILL_DATA.jobPresets && typeof EXTERNAL_SKILL_DATA.jobPresets === "object") {
+    Object.assign(JOB_SKILL_PRESETS, EXTERNAL_SKILL_DATA.jobPresets);
+  }
+
+  function validateSkillDefinitions() {
+    if (typeof EXTERNAL_SKILL_DATA.validateSkillDefinitions === "function") {
+      return EXTERNAL_SKILL_DATA.validateSkillDefinitions(SKILL_DEFS, SKILL_RANKS);
+    }
+    const counts = { common: 0, extra: 0, unique: 0, ultimate: 0 };
+    const ids = new Set();
+    const names = new Set();
+    const errors = [];
+    for (const def of Object.values(SKILL_DEFS || {})) {
+      if (counts[def.rank] !== undefined) counts[def.rank] += 1;
+      if (!def.id || ids.has(def.id)) errors.push(`skill id issue: ${def.id || "empty"}`);
+      if (!def.name || names.has(def.name)) errors.push(`skill name issue: ${def.name || "empty"}`);
+      if (!SKILL_RANKS[def.rank]) errors.push(`unknown skill rank: ${def.rank || "empty"}`);
+      if (!def.description) errors.push(`empty skill description: ${def.id || def.name}`);
+      if (!def.effects || !Object.keys(def.effects).length) errors.push(`empty skill effects: ${def.id || def.name}`);
+      if (def.id) ids.add(def.id);
+      if (def.name) names.add(def.name);
+    }
+    const total = Object.values(SKILL_DEFS || {}).length;
+    for (const rank of Object.keys(counts)) {
+      if (counts[rank] !== 100) errors.push(`${rank} count ${counts[rank]}`);
+    }
+    if (total !== 400) errors.push(`total skill count ${total}`);
+    return { ok: errors.length === 0, total, counts, duplicateIds: total - ids.size, duplicateNames: total - names.size, errors };
+  }
+
   const QUESTS = [
     {
       id: "first_home",
@@ -1657,6 +2185,7 @@
     base: ["heroPanel", "basePanel", "dailyPanel", "resourcesPanel", "logPanel"],
     explore: ["mapPanel", "locationPanel", "expeditionPanel", "resourcesPanel", "dailyPanel", "logPanel"],
     party: ["heroPanel", "rosterPanel", "familiarPanel", "skillPanel", "jobsPanel", "resourcesPanel"],
+    skills: ["skillPanel", "resourcesPanel", "logPanel"],
     craft: ["basePanel", "craftPanel", "resourcesPanel", "logPanel"],
     market: ["marketPanel", "resourcesPanel", "logPanel"],
     guild: ["guildPanel", "achievementPanel", "resourcesPanel", "logPanel"],
@@ -1667,6 +2196,7 @@
 
   const elements = {};
   const MENU_VIEW_DEFS = [
+    { id: "skills", label: "スキル" },
     { id: "base", label: "ホーム" },
     { id: "explore", label: "探索" },
     { id: "party", label: "仲間" },
@@ -1689,6 +2219,8 @@
   });
 
   let selectedCategory = "combat";
+  let selectedSkillRank = "all";
+  let selectedSkillDomain = "all";
   let state = loadState();
   let firebaseConfig = loadFirebaseConfig();
   let firebaseServices = null;
@@ -1780,6 +2312,28 @@
       if (action === "set-category") {
         selectedCategory = actionElement.dataset.category;
         renderJobs();
+      }
+
+      if (action === "set-skill-rank") {
+        selectedSkillRank = actionElement.dataset.rank || "all";
+        renderSkills();
+      }
+
+      if (action === "set-skill-domain") {
+        selectedSkillDomain = actionElement.dataset.domain || "all";
+        renderSkills();
+      }
+
+      if (action === "equip-skill") {
+        equipSkill("player", actionElement.dataset.skill);
+        saveState(false);
+        renderSkills();
+      }
+
+      if (action === "unequip-skill") {
+        unequipSkill("player", actionElement.dataset.skill);
+        saveState(false);
+        renderSkills();
       }
 
       if (action === "assign-hero-job") {
@@ -2047,6 +2601,8 @@
       progress: 0,
       gatherProgress: 0,
       craftProgress: 0,
+      explorePanels: [],
+      exploreSceneTick: 0,
       clears: {},
       story: {
         selectedId: "prologue",
@@ -2067,6 +2623,7 @@
         points: 0,
         unlocked: {},
       },
+      skills: createDefaultSkillState(),
       rebirth: {
         count: 0,
         lastGain: 0,
@@ -2160,10 +2717,13 @@
         bossClears: normalizeCounterMap(parsed.bossClears),
         facilityLevels: normalizeFacilityLevels(parsed.facilityLevels),
         skillTree: normalizeSkillTree(parsed.skillTree),
+        skills: normalizeSkillState(parsed.skills, normalizedMembers),
         rebirth: normalizeRebirth(parsed.rebirth),
         encounter: normalizeEncounter(parsed.encounter),
         battleMode: parsed.battleMode === "manual" ? "manual" : "auto",
         travel: normalizeTravel(parsed.travel),
+        explorePanels: normalizeScenePanels(parsed.explorePanels),
+        exploreSceneTick: Math.max(0, Math.floor(Number(parsed.exploreSceneTick) || 0)),
         guild: normalizeGuild(parsed.guild),
         guildRequests: normalizeGuildRequests(parsed.guildRequests),
         monsterKills: normalizeCounterMap(parsed.monsterKills),
@@ -2375,10 +2935,174 @@
     };
   }
 
+  function createDefaultSkillState() {
+    const player = { owned: {}, equipped: [] };
+    for (const skillId of PLAYER_STARTING_SKILLS) {
+      addSkillToOwner(player, skillId, { silent: true });
+    }
+    return {
+      player,
+      companions: {},
+      titles: ["pioneer_title"],
+      blessings: [],
+      skillLog: [],
+    };
+  }
+
+  function createSkillEntry(skillId, source = {}) {
+    const def = getSkillDef(skillId);
+    if (!def) {
+      return null;
+    }
+    return {
+      id: def.id,
+      level: clamp(Math.floor(Number(source.level) || 1), 1, def.maxLevel || 10),
+      exp: Math.max(0, Math.floor(Number(source.exp) || 0)),
+      awakened: Boolean(source.awakened),
+      evolvedTo: getSkillDef(source.evolvedTo) ? source.evolvedTo : "",
+      unlockedAt: Math.max(0, Number(source.unlockedAt) || Date.now()),
+    };
+  }
+
+  function addSkillToOwner(owner, skillId, options = {}) {
+    const def = getSkillDef(skillId);
+    if (!owner || !def) {
+      return null;
+    }
+    owner.owned = owner.owned && typeof owner.owned === "object" ? owner.owned : {};
+    if (!owner.owned[def.id]) {
+      owner.owned[def.id] = createSkillEntry(def.id, { level: options.level || 1, unlockedAt: options.unlockedAt });
+    }
+    return owner.owned[def.id];
+  }
+
+  function normalizeSkillOwner(owner) {
+    const normalized = { owned: {}, equipped: [] };
+    const sourceOwned = owner?.owned && typeof owner.owned === "object" ? owner.owned : {};
+    for (const [skillId, entry] of Object.entries(sourceOwned)) {
+      const normalizedEntry = createSkillEntry(skillId, entry);
+      if (normalizedEntry) {
+        normalized.owned[normalizedEntry.id] = normalizedEntry;
+      }
+    }
+    normalized.equipped = Array.isArray(owner?.equipped)
+      ? owner.equipped.filter((skillId) => getSkillDef(skillId) && normalized.owned[skillId]).slice(0, 8)
+      : [];
+    return normalized;
+  }
+
+  function getDefaultSkillsForMember(member, index = 0) {
+    if (!member) {
+      return [];
+    }
+    const skillIds = new Set(member.id === "hero" ? PLAYER_STARTING_SKILLS : []);
+    const profilePreset = PROFILE_SKILL_PRESETS[member.profileId] || [];
+    const jobPreset = JOB_SKILL_PRESETS[member.jobId] || [];
+    for (const skillId of [...profilePreset, ...jobPreset]) {
+      skillIds.add(skillId);
+    }
+    if (member.id === "hero") {
+      const job = JOB_BY_ID[member.jobId];
+      if (job?.category === "combat") skillIds.add("flash_step");
+      if (job?.category === "craft") skillIds.add("smith_soul");
+      if (job?.category === "gather") skillIds.add("trap_reading");
+    } else if (index > 0 && skillIds.size === 0) {
+      skillIds.add(index % 2 === 0 ? "trap_reading" : "healing_light");
+    }
+    return Array.from(skillIds).filter((skillId) => getSkillDef(skillId));
+  }
+
+  function normalizeSkillState(skills, members = []) {
+    const normalized = {
+      player: normalizeSkillOwner(skills?.player),
+      companions: {},
+      titles: Array.isArray(skills?.titles) ? skills.titles.filter((skillId) => getSkillDef(skillId)?.tier === "title").slice(0, 20) : [],
+      blessings: Array.isArray(skills?.blessings) ? skills.blessings.filter((skillId) => getSkillDef(skillId)?.tier === "blessing").slice(0, 20) : [],
+      skillLog: Array.isArray(skills?.skillLog)
+        ? skills.skillLog.slice(0, SKILL_LOG_LIMIT).map((entry) => ({
+            message: String(entry?.message || "").slice(0, 140),
+            kind: String(entry?.kind || "system").slice(0, 16),
+            time: Math.max(0, Number(entry?.time) || Date.now()),
+          }))
+        : [],
+    };
+
+    for (const skillId of PLAYER_STARTING_SKILLS) {
+      addSkillToOwner(normalized.player, skillId, { silent: true });
+    }
+
+    const sourceCompanions = skills?.companions && typeof skills.companions === "object" ? skills.companions : {};
+    for (const [index, member] of members.entries()) {
+      if (!member || member.id === "hero") {
+        continue;
+      }
+      const owner = normalizeSkillOwner(sourceCompanions[member.id]);
+      for (const skillId of getDefaultSkillsForMember(member, index)) {
+        addSkillToOwner(owner, skillId, { silent: true });
+      }
+      normalized.companions[member.id] = owner;
+    }
+
+    for (const owner of [normalized.player, ...Object.values(normalized.companions)]) {
+      for (const skillId of Object.keys(owner.owned || {})) {
+        const def = getSkillDef(skillId);
+        if (def?.tier === "title" && !normalized.titles.includes(skillId)) {
+          normalized.titles.push(skillId);
+        }
+        if (def?.tier === "blessing" && !normalized.blessings.includes(skillId)) {
+          normalized.blessings.push(skillId);
+        }
+      }
+    }
+
+    return normalized;
+  }
+
   function normalizeRebirth(rebirth) {
     return {
       count: Math.max(0, Math.floor(Number(rebirth?.count) || 0)),
       lastGain: Math.max(0, Math.floor(Number(rebirth?.lastGain) || 0)),
+    };
+  }
+
+  function normalizeMangaPanels(panels, limit = MANGA_PANEL_LIMIT) {
+    if (!Array.isArray(panels)) {
+      return [];
+    }
+
+    const allowedKinds = new Set(["hero", "enemy", "support", "system"]);
+    return panels.slice(0, limit).map((panel) => {
+      const kind = allowedKinds.has(panel?.kind) ? panel.kind : "system";
+      return {
+        kind,
+        title: String(panel?.title || "戦況").slice(0, 34),
+        text: String(panel?.text || "").slice(0, 180),
+        impact: String(panel?.impact || "").slice(0, 90),
+        time: Math.max(0, Number(panel?.time) || Date.now()),
+      };
+    });
+  }
+
+  function normalizeScenePanels(panels) {
+    return normalizeMangaPanels(panels, EXPLORE_PANEL_LIMIT);
+  }
+
+  function normalizeEncounterScene(encounter) {
+    const distance = ["near", "mid", "far"].includes(encounter?.distance) ? encounter.distance : "mid";
+    const telegraph = String(encounter?.telegraph || "敵は間合いを測り、次の一手を探っている。").slice(0, 100);
+    const rawMomentum = Number(encounter?.momentum);
+    const rawTension = Number(encounter?.tension);
+    return {
+      turn: Math.max(0, Math.floor(Number(encounter?.turn) || 0)),
+      momentum: clamp(Number.isFinite(rawMomentum) ? rawMomentum : 0, -100, 100),
+      tension: clamp(Number.isFinite(rawTension) ? rawTension : 20, 0, 100),
+      distance,
+      telegraph,
+      telegraphPending: Boolean(encounter?.telegraphPending),
+      observed: Boolean(encounter?.observed),
+      supportGuard: Boolean(encounter?.supportGuard),
+      sceneDamageFactor: Number.isFinite(Number(encounter?.sceneDamageFactor)) ? Math.max(0.1, Number(encounter.sceneDamageFactor)) : 1,
+      panels: normalizeMangaPanels(encounter?.panels),
     };
   }
 
@@ -2404,6 +3128,7 @@
             type: String(entry?.type || "info").slice(0, 16),
           }))
         : [],
+      ...normalizeEncounterScene(encounter),
     };
   }
 
@@ -2880,6 +3605,9 @@
     state.exploring = !state.exploring;
     if (!state.exploring) {
       state.encounter = null;
+    } else {
+      state.exploreSceneTick = 0;
+      pushExplorePanel("system", "探索開始", `${location.name}へ向けて、仲間たちが隊列を組んだ。`, `同行 ${state.members.length}人`);
     }
     addLog(state.exploring ? `${location.name}へヒロインたちと探索に出発。同行人数は${state.members.length}人、上限なし。` : "探索隊が街へ戻りました。", state.exploring ? "loot" : "warn");
     renderAll();
@@ -2921,7 +3649,7 @@
     }
 
     const stats = aggregateStats();
-    const commandId = ["attack", "skill", "guard"].includes(command) ? command : "attack";
+    const commandId = ["attack", "skill", "guard", "observe"].includes(command) ? command : "attack";
     if (context.kind === "travel") {
       advanceTravelEncounter(stats, context.location, false, commandId);
     } else {
@@ -3127,6 +3855,7 @@
     }
 
     addGuildReputation("artisans", recipe.resultType === "equipment" ? 5 : 3, true);
+    grantCraftSkillExp(recipe.resultType === "equipment" ? 14 : 8 + (recipe.amount || 1), "手動クラフト", { silent: false });
     saveState(false);
     renderAll();
   }
@@ -3196,6 +3925,7 @@
     spendResources(cost);
     item.level = (item.level || 0) + 1;
     item.stats = getItemEffectiveStats(item);
+    grantCraftSkillExp(8 + item.level, "装備強化", { silent: false });
     addLog(`${item.name}をLv.${item.level}に強化しました。${formatItemStats(getItemEffectiveStats(item))}`, "win");
     saveState(false);
     renderAll();
@@ -3230,6 +3960,7 @@
     spendResources(cost);
     item.limitBreak = (item.limitBreak || 0) + 1;
     item.stats = getItemEffectiveStats(item);
+    grantCraftSkillExp(14 + item.limitBreak * 3, "限界突破", { silent: false });
     addLog(`${item.name}が限界突破+${item.limitBreak}。最大Lv.${getItemMaxLevel(item)}になりました。`, "win");
     saveState(false);
     renderAll();
@@ -3274,6 +4005,7 @@
     item.limitBreak = 0;
     item.evolution = (item.evolution || 0) + 1;
     item.stats = getItemEffectiveStats(item);
+    grantCraftSkillExp(20 + item.evolution * 5, "装備進化", { silent: false });
     addLog(`${item.name}が${nextRarity.name}へ進化しました。Lvと限界突破はリセットされ、基礎能力が上昇しました。`, "win");
     saveState(false);
     renderAll();
@@ -3348,6 +4080,7 @@
       addGuildReputation("adventurers", 16, true);
       addGuildReputation(state.guild?.activeId, 8, true);
       gainPartyBond(6 + Math.floor((boss.power || 0) / 120), false, boss.name);
+      grantBossSkillExp(boss, { silent: false });
       addLog(`${boss.name}を討伐しました。報酬: ${renderRewardText(reward)} / 経験値+${boss.exp}`, "win");
     } else {
       state.progress = Math.max(0, state.progress - 25);
@@ -3800,6 +4533,7 @@
     state.travel = normalizeTravel(null);
     state.progress = 0;
     state.encounter = null;
+    grantSkillExpToParty(["simple_appraisal", "trap_reading", "camp_focus"], discovered ? 6 : 12, discovered ? "移動到着" : "新エリア発見", { silent });
 
     if (!silent) {
       addLog(discovered ? `${target.name}に到着しました。` : `未開の地を踏破し、${target.name}を発見しました。`, "win");
@@ -3828,7 +4562,17 @@
       lastEnemyDamage: 0,
       lastEnemyAction: "移動中の隙をうかがっています。",
       battleLog: [{ text: `移動中に${enemyName}が襲ってきました。`, type: "warn" }],
+      turn: 0,
+      momentum: -8,
+      tension: randomInt(18, 30),
+      distance: rollBattleDistance(location),
+      telegraph: `移動中の隊列を狙い、${enemyName}が草陰から距離を測っている。`,
+      telegraphPending: false,
+      panels: [
+        createMangaPanel("enemy", "道中襲撃", `移動中に${enemyName}が飛び出し、隊列の横腹を狙った。`, "戦闘開始 / 戦況 -8"),
+      ],
     };
+    pushExplorePanel("enemy", "道中襲撃", `${location.name}へ向かう途中、${enemyName}が行く手を塞いだ。`, "移動停止 / 戦闘開始");
 
     if (!silent) {
       addLog(`移動中に${enemyName}が襲撃。自動戦闘に入ります。`, "warn");
@@ -3836,12 +4580,23 @@
   }
 
   function getBattleCommandConfig(command) {
+    if (command === "observe") {
+      return {
+        id: "observe",
+        label: "観察",
+        playerText: "観察",
+        damageMultiplier: 0.22,
+        pressureMultiplier: 0.5,
+        guard: false,
+        observe: true,
+      };
+    }
     if (command === "skill") {
       return {
         id: "skill",
-        label: "スキル",
-        playerText: "スキル攻撃",
-        damageMultiplier: 1.62,
+        label: "必殺技",
+        playerText: "必殺技",
+        damageMultiplier: 1.34,
         pressureMultiplier: 1.08,
         guard: false,
       };
@@ -3849,8 +4604,8 @@
     if (command === "guard") {
       return {
         id: "guard",
-        label: "防御",
-        playerText: "防御反撃",
+        label: "受け流し",
+        playerText: "受け流し",
         damageMultiplier: 0.42,
         pressureMultiplier: 0.34,
         guard: true,
@@ -3858,18 +4613,398 @@
     }
     return {
       id: "attack",
-      label: "攻撃",
-      playerText: "通常攻撃",
+      label: "斬り込み",
+      playerText: "斬り込み",
       damageMultiplier: 1,
       pressureMultiplier: 1,
       guard: false,
     };
   }
 
-  function getCommandDamage(stats, commandConfig) {
+  function getCommandDamage(stats, commandConfig, encounter = null) {
     const baseDamage = stats.atk * 0.55 + stats.mag * 0.42 + stats.speed * 0.22 + stats.combat * 0.035;
     const skillBonus = commandConfig.id === "skill" ? stats.mag * 0.22 + stats.luck * 0.08 : 0;
-    return (Math.max(5, baseDamage) + skillBonus) * commandConfig.damageMultiplier * randomFloat(0.82, 1.2);
+    const tension = clamp(Number(encounter?.tension) || 0, 0, 100);
+    const tensionBoost = commandConfig.id === "skill"
+      ? tension >= 55
+        ? 1.34
+        : 0.94 + tension / 180
+      : 1;
+    return (Math.max(5, baseDamage) + skillBonus) * commandConfig.damageMultiplier * tensionBoost * randomFloat(0.82, 1.2);
+  }
+
+  function createMangaPanel(kind, title, text, impact = "") {
+    return {
+      kind: ["hero", "enemy", "support", "system"].includes(kind) ? kind : "system",
+      title: String(title || "戦況").slice(0, 34),
+      text: String(text || "").slice(0, 180),
+      impact: String(impact || "").slice(0, 90),
+      time: Date.now(),
+    };
+  }
+
+  function pushMangaPanel(encounter, kind, title, text, impact = "") {
+    if (!encounter) {
+      return;
+    }
+    Object.assign(encounter, normalizeEncounterScene(encounter));
+    encounter.panels.unshift(createMangaPanel(kind, title, text, impact));
+    encounter.panels = normalizeMangaPanels(encounter.panels);
+  }
+
+  function pushExplorePanel(kind, title, text, impact = "") {
+    state.explorePanels = normalizeScenePanels(state.explorePanels);
+    state.explorePanels.unshift(createMangaPanel(kind, title, text, impact));
+    state.explorePanels = normalizeScenePanels(state.explorePanels);
+  }
+
+  function rollBattleDistance(location) {
+    const danger = Number(location?.danger) || 1;
+    if (danger >= 6) {
+      return ["near", "mid", "mid", "far"][randomInt(0, 3)];
+    }
+    return ["near", "near", "mid", "far"][randomInt(0, 3)];
+  }
+
+  function getDistanceLabel(distance) {
+    if (distance === "near") return "近距離";
+    if (distance === "far") return "遠距離";
+    return "中距離";
+  }
+
+  function shiftBattleDistance(current, commandId) {
+    if (commandId === "attack") return Math.random() < 0.55 ? "near" : "mid";
+    if (commandId === "skill") return Math.random() < 0.5 ? "mid" : "far";
+    if (commandId === "guard") return Math.random() < 0.62 ? "mid" : current;
+    if (commandId === "observe") return Math.random() < 0.5 ? "far" : "mid";
+    return current;
+  }
+
+  function formatSceneDelta(value) {
+    const rounded = Math.round(Number(value) || 0);
+    return rounded >= 0 ? `+${rounded}` : `${rounded}`;
+  }
+
+  function getNeutralTelegraph(encounter) {
+    const distanceText = getDistanceLabel(encounter?.distance || "mid");
+    const lines = [
+      `${encounter.name}は${distanceText}で呼吸を整え、隙を探している。`,
+      `${encounter.name}の足元に土煙が立つ。次の踏み込みを警戒したい。`,
+      `${encounter.name}は低く構え、こちらの前衛を見ている。`,
+      `${encounter.name}の魔力が薄く揺れ、戦場の空気が張りつめる。`,
+    ];
+    return lines[randomInt(0, lines.length - 1)];
+  }
+
+  function rollEnemyTelegraph(encounter, location, clear = false) {
+    const enemyName = encounter?.name || "敵";
+    const locationName = location?.name || "戦場";
+    const lines = [
+      `${enemyName}の右腕に黒い魔力が集まっている。正面への大振りが来る。`,
+      `${enemyName}が息を止め、足元へ力を溜めた。突進の予兆だ。`,
+      `${locationName}の空気が歪み、${enemyName}の周囲に鋭い殺気が走る。`,
+      `${enemyName}が一歩下がった。遠距離からの強撃を狙っている。`,
+    ];
+    const text = lines[randomInt(0, lines.length - 1)];
+    return clear ? `見切った: ${text}` : text;
+  }
+
+  function prepareEnemyTelegraph(encounter, location, clear = false) {
+    encounter.telegraph = rollEnemyTelegraph(encounter, location, clear);
+    encounter.telegraphPending = true;
+    encounter.observed = clear;
+    encounter.tension = clamp((Number(encounter.tension) || 0) + randomInt(4, 8), 0, 100);
+    pushMangaPanel(
+      encounter,
+      "enemy",
+      clear ? "予兆を見切る" : "敵の予兆",
+      encounter.telegraph,
+      clear ? "次の敵行動を軽減しやすい" : "次ターン注意 / 緊張上昇",
+    );
+  }
+
+  function applyBattleSceneAction(encounter, commandConfig, location, stats, dealtDamage, tensionBefore) {
+    const beforeMomentum = encounter.momentum;
+    const beforeTension = encounter.tension;
+    encounter.distance = shiftBattleDistance(encounter.distance, commandConfig.id);
+
+    if (commandConfig.id === "skill") {
+      const decisive = tensionBefore >= 55;
+      encounter.momentum = clamp(encounter.momentum + (decisive ? randomInt(12, 20) : randomInt(5, 10)), -100, 100);
+      encounter.tension = clamp(encounter.tension - (decisive ? 34 : 18), 0, 100);
+      pushMangaPanel(
+        encounter,
+        "hero",
+        decisive ? "星灯りの必殺" : "まだ浅い必殺",
+        decisive
+          ? `${state.members[0].name}の一撃が弧を描き、${encounter.name}の守りを裂いた。`
+          : `${state.members[0].name}は魔力を乗せて踏み込むが、決定打には少し届かない。`,
+        `戦況 ${formatSceneDelta(encounter.momentum - beforeMomentum)} / 敵HP -${dealtDamage} / 緊張 ${formatSceneDelta(encounter.tension - beforeTension)}`,
+      );
+      return;
+    }
+
+    if (commandConfig.id === "guard") {
+      const readBigMove = encounter.telegraphPending;
+      encounter.momentum = clamp(encounter.momentum + (readBigMove ? randomInt(8, 14) : randomInt(2, 5)), -100, 100);
+      encounter.tension = clamp(encounter.tension + randomInt(8, 13), 0, 100);
+      pushMangaPanel(
+        encounter,
+        "hero",
+        readBigMove ? "大技を受け流す構え" : "刃を寝かせて受ける",
+        readBigMove
+          ? `${state.members[0].name}は敵の予兆に合わせ、衝撃を横へ逃がす構えを取った。`
+          : `${state.members[0].name}は隊列を下げ、反撃の間合いを作る。`,
+        `戦況 ${formatSceneDelta(encounter.momentum - beforeMomentum)} / 緊張 ${formatSceneDelta(encounter.tension - beforeTension)} / 敵HP -${dealtDamage}`,
+      );
+      return;
+    }
+
+    if (commandConfig.id === "observe") {
+      encounter.momentum = clamp(encounter.momentum + randomInt(6, 10) + Math.floor(stats.scout / 220), -100, 100);
+      encounter.tension = clamp(encounter.tension + randomInt(5, 9), 0, 100);
+      if (encounter.telegraphPending) {
+        encounter.telegraph = rollEnemyTelegraph(encounter, location, true);
+        encounter.observed = true;
+      } else {
+        encounter.telegraph = `観察済み: ${getNeutralTelegraph(encounter)}`;
+        encounter.observed = true;
+      }
+      pushMangaPanel(
+        encounter,
+        "hero",
+        "敵の呼吸を読む",
+        `${state.members[0].name}は攻め急がず、${encounter.name}の視線と足運びを見抜いた。`,
+        `戦況 ${formatSceneDelta(encounter.momentum - beforeMomentum)} / 緊張 ${formatSceneDelta(encounter.tension - beforeTension)} / 予兆明確化`,
+      );
+      return;
+    }
+
+    encounter.momentum = clamp(encounter.momentum + randomInt(5, 11), -100, 100);
+    encounter.tension = clamp(encounter.tension + randomInt(5, 9), 0, 100);
+    pushMangaPanel(
+      encounter,
+      "hero",
+      "斬り込む",
+      `${state.members[0].name}が間合いを詰め、${encounter.name}の体勢を崩した。`,
+      `戦況 ${formatSceneDelta(encounter.momentum - beforeMomentum)} / 敵HP -${dealtDamage} / 緊張 ${formatSceneDelta(encounter.tension - beforeTension)}`,
+    );
+  }
+
+  function pickSupportMember(stats) {
+    const partners = state.members.filter((member) => member.id !== "hero");
+    if (partners.length === 0) {
+      return null;
+    }
+    const totalWeight = partners.reduce((sum, member) => {
+      const job = JOB_BY_ID[member.jobId] || JOB_BY_ID.sword;
+      const bond = getBondInfo(member.affection).level;
+      return sum + 1 + bond * 0.65 + (job.category === "combat" ? 0.45 : 0.25) + stats.luck / 9000;
+    }, 0);
+    let roll = Math.random() * totalWeight;
+    for (const member of partners) {
+      const job = JOB_BY_ID[member.jobId] || JOB_BY_ID.sword;
+      const bond = getBondInfo(member.affection).level;
+      roll -= 1 + bond * 0.65 + (job.category === "combat" ? 0.45 : 0.25) + stats.luck / 9000;
+      if (roll <= 0) {
+        return member;
+      }
+    }
+    return partners[partners.length - 1];
+  }
+
+  function maybeApplySupportPanel(encounter, stats, location) {
+    const member = pickSupportMember(stats);
+    if (!member) {
+      return 0;
+    }
+    const playerSupportEffects = getSkillEffectsForContext("player", { tags: ["support", "bond", "blessing"] });
+    const memberSupportEffects = getSkillEffectsForContext(member.id, { tags: ["support", "heal", "scout", "battle"] });
+    const supportChance = clamp(
+      0.08 + state.members.length * 0.006 + getBondInfo(member.affection).level * 0.012 + stats.luck / 12000
+        + (playerSupportEffects.supportTriggerRate || playerSupportEffects.supportRate || 0)
+        + (memberSupportEffects.supportTriggerRate || memberSupportEffects.supportRate || 0) * 0.7,
+      0.07,
+      0.34,
+    );
+    if (Math.random() > supportChance) {
+      return 0;
+    }
+
+    const job = JOB_BY_ID[member.jobId] || JOB_BY_ID.sword;
+    const profile = getCompanionProfile(member);
+    const beforeMomentum = encounter.momentum;
+    const beforeTension = encounter.tension;
+    let bonusDamage = 0;
+    let title = "仲間の援護";
+    let text = `${member.name}が一歩前に出て、隊列を支えた。`;
+
+    if (profile.id === "healer" || job.stats?.heal >= 5) {
+      encounter.supportGuard = true;
+      encounter.momentum = clamp(encounter.momentum + randomInt(3, 7), -100, 100);
+      encounter.tension = clamp(encounter.tension + randomInt(4, 8), 0, 100);
+      title = `${member.name}の結界`;
+      text = `${member.name}が淡い結界を張り、敵の殺気をやわらげた。`;
+    } else if (["ranger", "scout", "hunter"].includes(profile.id) || job.stats?.scout >= 5) {
+      encounter.observed = true;
+      encounter.telegraph = encounter.telegraphPending ? rollEnemyTelegraph(encounter, location, true) : `足跡から読む: ${getNeutralTelegraph(encounter)}`;
+      encounter.momentum = clamp(encounter.momentum + randomInt(7, 12), -100, 100);
+      title = `${member.name}の索敵`;
+      text = `${member.name}が敵の重心を見抜き、次の攻撃線を仲間へ伝えた。`;
+    } else if (profile.id === "smith" || job.id === "blacksmith" || job.category === "craft") {
+      bonusDamage = Math.max(2, Math.floor((stats.craft * 0.08 + stats.atk * 0.04 + member.level) * randomFloat(0.7, 1.2)));
+      encounter.hp = Math.max(0, encounter.hp - bonusDamage);
+      encounter.lastPlayerDamage = (encounter.lastPlayerDamage || 0) + bonusDamage;
+      encounter.momentum = clamp(encounter.momentum + randomInt(4, 8), -100, 100);
+      title = `${member.name}の武器調整`;
+      text = `${member.name}が刃の鳴りを聞き、次の一撃が深く入るよう手を添えた。`;
+    } else if (profile.id === "shinobi" || job.id === "shinobi" || job.stats?.speed >= 6) {
+      bonusDamage = Math.max(2, Math.floor((stats.speed * 0.1 + member.level) * randomFloat(0.75, 1.25)));
+      encounter.hp = Math.max(0, encounter.hp - bonusDamage);
+      encounter.lastPlayerDamage = (encounter.lastPlayerDamage || 0) + bonusDamage;
+      encounter.momentum = clamp(encounter.momentum + randomInt(8, 13), -100, 100);
+      title = `${member.name}の背面奇襲`;
+      text = `${member.name}が影のように回り込み、敵の足を止めた。`;
+    } else {
+      encounter.momentum = clamp(encounter.momentum + randomInt(3, 8), -100, 100);
+      encounter.tension = clamp(encounter.tension + randomInt(2, 5), 0, 100);
+    }
+
+    const impact = [
+      `戦況 ${formatSceneDelta(encounter.momentum - beforeMomentum)}`,
+      encounter.tension !== beforeTension ? `緊張 ${formatSceneDelta(encounter.tension - beforeTension)}` : "",
+      bonusDamage ? `敵HP -${bonusDamage}` : "",
+      encounter.supportGuard ? "被害軽減" : "",
+    ].filter(Boolean).join(" / ");
+    pushMangaPanel(encounter, "support", title, text, impact);
+    addSkillExp(member.id, pickRandomSupportSkill(member.id, { tags: ["support", "battle", "heal", "scout"] })?.id || "lovebind_blessing", 9, "仲間支援", { silent: true });
+    addSkillExp("player", "lovebind_blessing", 5, "仲間支援", { silent: true });
+    return bonusDamage;
+  }
+
+  function resolveEnemySceneRound(encounter, stats, location, silent, commandConfig, isTravel) {
+    if (encounter.telegraphPending) {
+      const countered = commandConfig.guard || commandConfig.observe || encounter.observed || encounter.supportGuard;
+      const beforeMomentum = encounter.momentum;
+      const factor = countered ? (commandConfig.guard ? 0.38 : 0.58) : 1.28;
+      encounter.guardNext = commandConfig.guard || encounter.supportGuard;
+      encounter.sceneDamageFactor = factor;
+      encounter.enemyPanelTitle = countered ? "大技をしのぐ" : "敵の大技";
+      encounter.momentum = clamp(encounter.momentum - (countered ? randomInt(2, 6) : randomInt(11, 18)), -100, 100);
+      if (isTravel) {
+        sufferTravelEncounterPressure(encounter, silent);
+      } else {
+        sufferEncounterPressure(encounter, silent);
+      }
+      addSkillExp("player", countered ? "simple_appraisal" : "physical_resistance", countered ? 9 : 5, countered ? "大技対処" : "大技被害", { silent });
+      if (commandConfig.guard) {
+        addSkillExp("player", "ironwall", 10, "受け流し成功", { silent });
+      }
+      pushMangaPanel(
+        encounter,
+        "system",
+        countered ? "読み勝ち" : "戦況が傾く",
+        countered ? "仲間の警戒と受け流しで、決定的な被害は避けた。" : "予兆への対応が遅れ、敵の攻勢が戦場を押し込む。",
+        `戦況 ${formatSceneDelta(encounter.momentum - beforeMomentum)} / 被害 ${encounter.lastEnemyDamage || 0}`,
+      );
+      encounter.telegraphPending = false;
+      encounter.observed = false;
+      encounter.telegraph = getNeutralTelegraph(encounter);
+      encounter.tension = clamp(encounter.tension + (countered ? 2 : 7), 0, 100);
+      return;
+    }
+
+    const shouldTelegraph = encounter.turn > 0 && (encounter.turn % 3 === 0 || encounter.tension >= 72 || Math.random() < 0.11);
+    if (shouldTelegraph) {
+      prepareEnemyTelegraph(encounter, location, false);
+      return;
+    }
+
+    const pressureChance = clamp(encounter.power / (stats.combat + encounter.power + 220) * commandConfig.pressureMultiplier, 0.02, 0.34);
+    if (Math.random() < pressureChance) {
+      encounter.sceneDamageFactor = 1;
+      encounter.enemyPanelTitle = "敵の反撃";
+      encounter.momentum = clamp(encounter.momentum - randomInt(4, 9), -100, 100);
+      if (isTravel) {
+        sufferTravelEncounterPressure(encounter, silent);
+      } else {
+        sufferEncounterPressure(encounter, silent);
+      }
+    } else {
+      encounter.lastEnemyDamage = 0;
+      encounter.lastEnemyAction = `${encounter.name}の攻撃を受け流しました。`;
+      encounter.telegraph = getNeutralTelegraph(encounter);
+      encounter.momentum = clamp(encounter.momentum + (commandConfig.guard ? 3 : 1), -100, 100);
+      pushBattleEvent(encounter, `敵の攻撃: ${encounter.name}の攻撃を受け流した。`, "guard");
+      pushMangaPanel(
+        encounter,
+        "system",
+        "間合いの取り合い",
+        `${encounter.name}の攻撃線を外し、隊列は次の一手へ呼吸を合わせた。`,
+        `戦況 ${formatSceneDelta(commandConfig.guard ? 3 : 1)} / 被害なし`,
+      );
+    }
+  }
+
+  function maybePushExploreScene(location, stats, silent) {
+    if (silent || !location || location.danger <= 0 || state.encounter || state.travel?.active) {
+      return;
+    }
+    state.exploreSceneTick = Math.max(0, Math.floor(Number(state.exploreSceneTick) || 0)) + 1;
+    const threshold = clamp(7 + Math.floor(location.distance || 1), 7, 14);
+    if (state.exploreSceneTick < threshold && Math.random() > 0.14) {
+      return;
+    }
+    state.exploreSceneTick = 0;
+
+    const member = pickSupportMember(stats);
+    const resource = (location.gather || [])[randomInt(0, Math.max(0, (location.gather || []).length - 1))];
+    const scenes = [
+      {
+        kind: "system",
+        title: "淡い魔力の霧",
+        text: `${location.name}の入口に薄い霧が漂い、足音だけが小さく響く。`,
+        impact: "探索進行中",
+      },
+      {
+        kind: "enemy",
+        title: "遠い咆哮",
+        text: `遠くで魔物の咆哮が響いた。隊列は武器に手をかける。`,
+        impact: "遭遇警戒",
+      },
+      {
+        kind: "system",
+        title: "古い祠",
+        text: `苔むした祠を見つけた。誰かが置いた小さな護符がまだ温かい。`,
+        impact: "緊張が少し和らぐ",
+      },
+      {
+        kind: "support",
+        title: member ? `${member.name}のひとこと` : "仲間との会話",
+        text: member ? `${member.name}が隣に並び、「ここを抜けたら少し休もう」と笑った。` : "仲間たちの短い会話で、行軍の足取りが軽くなった。",
+        impact: member && Math.random() < 0.18 ? `${member.name} 親愛 +1` : "士気維持",
+        member,
+      },
+      {
+        kind: "support",
+        title: "足跡を見つける",
+        text: `${member?.name || "仲間"}が泥の上に残った足跡を見つけ、危険な道を避けた。`,
+        impact: `索敵 ${formatNumber(stats.scout)}`,
+      },
+      {
+        kind: "system",
+        title: "素材の気配",
+        text: resource ? `${RESOURCE_LABELS[resource.key] || "素材"}の群生地を見つけた。帰りに採取できそうだ。` : "地面に古い採取跡が残っている。",
+        impact: "採取班が確認",
+      },
+    ];
+    const scene = scenes[randomInt(0, scenes.length - 1)];
+    if (scene.member && scene.impact.includes("親愛 +1")) {
+      scene.member.affection += 1;
+      addSkillExp(scene.member.id, "lovebind_blessing", 5, "道中会話", { silent: true });
+    }
+    pushExplorePanel(scene.kind, scene.title, scene.text, scene.impact);
+    applyExploreSkillEffects(location, { scene, stats, silent });
   }
 
   function advanceTravelEncounter(stats, location, silent, command = "attack") {
@@ -3878,28 +5013,39 @@
       return;
     }
 
+    Object.assign(encounter, normalizeEncounterScene(encounter));
+    encounter.turn += 1;
     const commandConfig = getBattleCommandConfig(command);
-    const damage = getCommandDamage(stats, commandConfig);
+    const tensionBefore = encounter.tension;
+    const damage = getCommandDamage(stats, commandConfig, encounter);
     const dealtDamage = Math.max(1, Math.floor(damage));
     encounter.hp = Math.max(0, encounter.hp - damage);
     encounter.lastPlayerDamage = dealtDamage;
     encounter.guardNext = commandConfig.guard;
+    encounter.sceneDamageFactor = 1;
     pushBattleEvent(encounter, `${commandConfig.playerText}: ${encounter.name}に${dealtDamage}ダメージ。`, "player");
+    applyBattleSceneAction(encounter, commandConfig, location, stats, dealtDamage, tensionBefore);
+    applyBattleSkillEffects(encounter, { stats, location, commandConfig, dealtDamage, silent });
+    if (dealtDamage >= encounter.maxHp * 0.18) {
+      addSkillExp("player", commandConfig.id === "skill" ? "spark_art" : "flash_step", Math.max(3, Math.floor(dealtDamage / 12)), "大ダメージ", { silent });
+    }
 
     if (encounter.hp <= 0) {
       completeTravelEncounterVictory(location, stats, encounter, silent);
       return;
     }
 
-    const pressureChance = clamp(encounter.power / (stats.combat + encounter.power + 220) * commandConfig.pressureMultiplier, 0.02, 0.34);
-    if (Math.random() < pressureChance) {
-      sufferTravelEncounterPressure(encounter, silent);
-    } else {
-      encounter.lastEnemyDamage = 0;
-      encounter.lastEnemyAction = `${encounter.name}の攻撃を受け流しました。`;
-      pushBattleEvent(encounter, `敵の攻撃: ${encounter.name}の攻撃を受け流した。`, "guard");
+    maybeApplySupportPanel(encounter, stats, location);
+    if (encounter.hp <= 0) {
+      completeTravelEncounterVictory(location, stats, encounter, silent);
+      return;
     }
+
+    resolveEnemySceneRound(encounter, stats, location, silent, commandConfig, true);
     encounter.guardNext = false;
+    encounter.supportGuard = false;
+    encounter.sceneDamageFactor = 1;
+    delete encounter.enemyPanelTitle;
   }
 
   function completeTravelEncounterVictory(location, stats, encounter, silent) {
@@ -3914,6 +5060,7 @@
     addGuildReputation(state.guild?.activeId, 1, true);
     tryTameFamiliar(encounter, location, stats, silent);
     gainPartyBond(1 + Math.max(1, location.danger || 1), silent, location.name);
+    grantBattleVictorySkillExp(encounter, location, Math.max(4, xp * 0.16), { silent });
     state.travel.encounter = null;
 
     if (!silent) {
@@ -3924,8 +5071,9 @@
   function sufferTravelEncounterPressure(encounter, silent) {
     const usedPotion = state.resources.potion > 0;
     const usedFood = !usedPotion && state.resources.food > 0;
-    const guardFactor = encounter.guardNext ? 0.45 : 1;
-    const enemyDamage = Math.max(1, Math.floor(encounter.power * randomFloat(0.08, 0.18) * guardFactor));
+    const guardFactor = encounter.guardNext || encounter.supportGuard ? 0.45 : 1;
+    const sceneFactor = Number.isFinite(Number(encounter.sceneDamageFactor)) ? Math.max(0.1, Number(encounter.sceneDamageFactor)) : 1;
+    const enemyDamage = Math.max(1, Math.floor(encounter.power * randomFloat(0.08, 0.18) * guardFactor * sceneFactor));
     let battleResult = "";
 
     if (usedPotion) {
@@ -3935,13 +5083,21 @@
       state.resources.food -= 1;
       battleResult = "携行食で踏みとどまった";
     } else {
-      state.travel.progress = Math.max(0, (state.travel.progress || 0) - 7);
+      state.travel.progress = Math.max(0, (state.travel.progress || 0) - Math.max(2, Math.floor(7 * guardFactor * sceneFactor)));
       battleResult = "足止めされ、移動が遅れた";
     }
 
     encounter.lastEnemyDamage = enemyDamage;
     encounter.lastEnemyAction = `${encounter.name}の襲撃: 被害${enemyDamage}。${battleResult}。`;
     pushBattleEvent(encounter, `敵の攻撃: 被害${enemyDamage}。${battleResult}。`, "enemy");
+    grantResistanceExpByDamage("physical", enemyDamage, { silent });
+    pushMangaPanel(
+      encounter,
+      "enemy",
+      encounter.enemyPanelTitle || "敵の反撃",
+      `${encounter.name}の攻撃が隊列を揺らす。${battleResult}。`,
+      `被害 ${encounter.lastEnemyDamage} / 戦況 ${formatSceneDelta(-Math.max(3, Math.floor(6 * sceneFactor * guardFactor)))}`,
+    );
     applyXp(Math.max(1, Math.floor(encounter.power * 0.018)), true);
 
     if (!silent && Math.random() < 0.35) {
@@ -4027,9 +5183,12 @@
   function performExplorationBattle(stats, location, silent) {
     if (!state.encounter || state.encounter.locationId !== location.id || state.encounter.hp <= 0) {
       state.encounter = null;
-      const searchGain = (5 + stats.speed * 0.18 + stats.scout * 0.22 + Math.sqrt(stats.partySize) * 0.7) / location.distance;
+      const exploreEffects = getSkillEffectsForContext("player", { tags: ["explore", "speed", "scout", "trap"] });
+      const searchGain = (5 + stats.speed * 0.18 + stats.scout * 0.22 + Math.sqrt(stats.partySize) * 0.7) / location.distance
+        * (1 + clamp((exploreEffects.exploreSpeedPct || 0) + (exploreEffects.travelSpeedPct || 0) + (exploreEffects.trapAvoidRate || 0) * 0.12, 0, 0.12));
       state.progress = clamp(state.progress + Math.max(2.5, searchGain), 0, 100);
       const encounterChance = clamp(location.danger * 0.035 + stats.scout / 1500 + state.progress / 720, 0.04, 0.62);
+      maybePushExploreScene(location, stats, silent);
 
       if (state.progress >= 100 || Math.random() < encounterChance) {
         startEncounter(location, stats, silent);
@@ -4062,6 +5221,7 @@
     const enemyName = isStrongEnemy ? `${location.name}の強敵` : location.enemies[randomInt(0, location.enemies.length - 1)];
     const power = getEnemyPower(location, isStrongEnemy);
     const maxHp = Math.max(32, Math.floor(power * (isStrongEnemy ? 1.32 : 0.94) + location.danger * 24 + 35));
+    const initialDistance = rollBattleDistance(location);
 
     markMonsterDiscovered(enemyName, location.id);
     state.encounter = {
@@ -4076,8 +5236,23 @@
       lastEnemyDamage: 0,
       lastEnemyAction: "敵の動きを見ています。",
       battleLog: [{ text: `${enemyName}が現れました。戦闘開始。`, type: "warn" }],
+      turn: 0,
+      momentum: isStrongEnemy ? -12 : 0,
+      tension: randomInt(isStrongEnemy ? 28 : 18, isStrongEnemy ? 42 : 32),
+      distance: initialDistance,
+      telegraph: `${enemyName}は${getDistanceLabel(initialDistance)}の間合いで、こちらの出方をうかがっている。`,
+      telegraphPending: false,
+      panels: [
+        createMangaPanel(
+          "enemy",
+          isStrongEnemy ? "強敵、現る" : "遭遇",
+          `${location.name}の気配が裂け、${enemyName}が姿を現した。`,
+          `${isStrongEnemy ? "強敵" : "戦闘開始"} / 緊張上昇`,
+        ),
+      ],
     };
     state.progress = 0;
+    pushExplorePanel("enemy", isStrongEnemy ? "強敵の影" : "敵遭遇", `${location.name}で${enemyName}と遭遇した。`, "戦闘開始");
 
     if (!silent) {
       addLog(`${location.name}で${enemyName}と遭遇。自動戦闘を開始しました。`, "warn");
@@ -4086,28 +5261,39 @@
 
   function advanceEncounter(stats, location, silent, command = "attack") {
     const encounter = state.encounter;
+    Object.assign(encounter, normalizeEncounterScene(encounter));
+    encounter.turn += 1;
     const commandConfig = getBattleCommandConfig(command);
-    const damage = getCommandDamage(stats, commandConfig);
+    const tensionBefore = encounter.tension;
+    const damage = getCommandDamage(stats, commandConfig, encounter);
     const dealtDamage = Math.max(1, Math.floor(damage));
     encounter.hp = Math.max(0, encounter.hp - damage);
     encounter.lastPlayerDamage = dealtDamage;
     encounter.guardNext = commandConfig.guard;
+    encounter.sceneDamageFactor = 1;
     pushBattleEvent(encounter, `${commandConfig.playerText}: ${encounter.name}に${dealtDamage}ダメージ。`, "player");
+    applyBattleSceneAction(encounter, commandConfig, location, stats, dealtDamage, tensionBefore);
+    applyBattleSkillEffects(encounter, { stats, location, commandConfig, dealtDamage, silent });
+    if (dealtDamage >= encounter.maxHp * 0.18) {
+      addSkillExp("player", commandConfig.id === "skill" ? "spark_art" : "flash_step", Math.max(3, Math.floor(dealtDamage / 12)), "大ダメージ", { silent });
+    }
 
     if (encounter.hp <= 0) {
       completeEncounterVictory(location, stats, encounter, silent);
       return;
     }
 
-    const pressureChance = clamp(encounter.power / (stats.combat + encounter.power + 220) * commandConfig.pressureMultiplier, 0.02, 0.34);
-    if (Math.random() < pressureChance) {
-      sufferEncounterPressure(encounter, silent);
-    } else {
-      encounter.lastEnemyDamage = 0;
-      encounter.lastEnemyAction = `${encounter.name}の攻撃を受け流しました。`;
-      pushBattleEvent(encounter, `敵の攻撃: ${encounter.name}の攻撃を受け流した。`, "guard");
+    maybeApplySupportPanel(encounter, stats, location);
+    if (encounter.hp <= 0) {
+      completeEncounterVictory(location, stats, encounter, silent);
+      return;
     }
+
+    resolveEnemySceneRound(encounter, stats, location, silent, commandConfig, false);
     encounter.guardNext = false;
+    encounter.supportGuard = false;
+    encounter.sceneDamageFactor = 1;
+    delete encounter.enemyPanelTitle;
   }
 
   function completeEncounterVictory(location, stats, encounter, silent) {
@@ -4126,6 +5312,7 @@
     addGuildReputation(state.guild?.activeId, encounter.isStrongEnemy ? 5 : 2, true);
     tryTameFamiliar(encounter, location, stats, silent);
     gainPartyBond(1 + location.danger + (encounter.isStrongEnemy ? 3 : 0), silent, location.name);
+    grantBattleVictorySkillExp(encounter, location, Math.max(5, xp * 0.18), { silent });
 
     if (encounter.isStrongEnemy) {
       addResource("charm", 1);
@@ -4142,8 +5329,9 @@
   function sufferEncounterPressure(encounter, silent) {
     const usedPotion = state.resources.potion > 0;
     const usedFood = !usedPotion && state.resources.food > 0;
-    const guardFactor = encounter.guardNext ? 0.45 : 1;
-    const enemyDamage = Math.max(1, Math.floor(encounter.power * randomFloat(0.08, 0.18) * guardFactor));
+    const guardFactor = encounter.guardNext || encounter.supportGuard ? 0.45 : 1;
+    const sceneFactor = Number.isFinite(Number(encounter.sceneDamageFactor)) ? Math.max(0.1, Number(encounter.sceneDamageFactor)) : 1;
+    const enemyDamage = Math.max(1, Math.floor(encounter.power * randomFloat(0.08, 0.18) * guardFactor * sceneFactor));
     let battleResult = "";
 
     if (usedPotion) {
@@ -4153,13 +5341,21 @@
       state.resources.food -= 1;
       battleResult = "携行食で踏みとどまった";
     } else {
-      state.progress = Math.max(0, state.progress - 8);
+      state.progress = Math.max(0, state.progress - Math.max(3, Math.floor(8 * guardFactor * sceneFactor)));
       battleResult = "隊列が押し戻された";
     }
 
     encounter.lastEnemyDamage = enemyDamage;
     encounter.lastEnemyAction = `${encounter.name}の反撃: 被害${enemyDamage}。${battleResult}。`;
     pushBattleEvent(encounter, `敵の攻撃: 被害${enemyDamage}。${battleResult}。`, "enemy");
+    grantResistanceExpByDamage("physical", enemyDamage, { silent });
+    pushMangaPanel(
+      encounter,
+      "enemy",
+      encounter.enemyPanelTitle || "敵の反撃",
+      `${encounter.name}の攻撃が前衛を押し込む。${battleResult}。`,
+      `被害 ${enemyDamage} / 戦況 ${formatSceneDelta(-Math.max(3, Math.floor(6 * sceneFactor * guardFactor)))}`,
+    );
     applyXp(Math.max(1, Math.floor(encounter.power * 0.025)), true);
 
     if (!silent && Math.random() < 0.35) {
@@ -4180,6 +5376,7 @@
       const amount = randomInt(drop.min, drop.max) + Math.floor(Math.random() * Math.max(1, stats.gather / 35));
       addResource(drop.key, amount);
       addGuildReputation("gatherers", 1, true);
+      grantSkillExpToParty([drop.key === "herb" ? "herb_scent" : "simple_appraisal", "trap_reading"], Math.max(2, amount + 2), "素材発見", { silent: true });
 
       if (!silent && Math.random() < 0.55) {
         addLog(`${location.name}の作業で${RESOURCE_LABELS[drop.key]}を${amount}個得ました。`, "loot");
@@ -4209,6 +5406,7 @@
       spendResources(recipe.need);
       addResource(recipe.key, recipe.amount);
       state.craftProgress -= 140;
+      grantCraftSkillExp(5 + recipe.amount, "自動クラフト", { silent: true });
 
       if (!silent) {
         addLog(`${recipe.text}。${RESOURCE_LABELS[recipe.key]}+${recipe.amount}`, "loot");
@@ -4331,6 +5529,7 @@
 
   function gainHaremBond(source, amount, silent) {
     state.haremXp += Math.max(1, Math.floor(amount));
+    grantBondSkillExp(Math.max(2, Math.floor(amount / 2)), source || "親愛", { silent });
 
     const levelUps = [];
     let safety = 0;
@@ -5378,6 +6577,1253 @@
     return state.skillTree.points >= (node.cost?.points || 0) && (state.resources.starseed || 0) >= (node.cost?.starseed || 0);
   }
 
+  function getSkillDef(skillId) {
+    return SKILL_DEF_BY_ID[String(skillId || "")] || null;
+  }
+
+  function ensureSkillState() {
+    state.skills = normalizeSkillState(state.skills, state.members || []);
+    return state.skills;
+  }
+
+  function getSkillOwnerKey(ownerId) {
+    return ownerId === "hero" || ownerId === "player" ? "player" : String(ownerId || "player");
+  }
+
+  function ensureSkillOwner(ownerId) {
+    const skills = ensureSkillState();
+    const ownerKey = getSkillOwnerKey(ownerId);
+    if (ownerKey === "player") {
+      skills.player = normalizeSkillOwner(skills.player);
+      for (const skillId of getDefaultSkillsForMember(state.members?.[0], 0)) {
+        addSkillToOwner(skills.player, skillId, { silent: true });
+      }
+      return skills.player;
+    }
+    skills.companions[ownerKey] = normalizeSkillOwner(skills.companions[ownerKey]);
+    const memberIndex = state.members.findIndex((member) => member.id === ownerKey);
+    if (memberIndex >= 0) {
+      for (const skillId of getDefaultSkillsForMember(state.members[memberIndex], memberIndex)) {
+        addSkillToOwner(skills.companions[ownerKey], skillId, { silent: true });
+      }
+    }
+    return skills.companions[ownerKey];
+  }
+
+  function getOwnedSkill(ownerId, skillId) {
+    const owner = ensureSkillOwner(ownerId);
+    return owner.owned?.[skillId] || null;
+  }
+
+  function ensureOwnedSkill(ownerId, skillId) {
+    const def = getSkillDef(skillId);
+    if (!def) {
+      return null;
+    }
+    const owner = ensureSkillOwner(ownerId);
+    return addSkillToOwner(owner, def.id, { silent: true });
+  }
+
+  function getSkillOwnerName(ownerId) {
+    const ownerKey = getSkillOwnerKey(ownerId);
+    if (ownerKey === "player") {
+      return state.members?.[0]?.name || state.heroName || "主人公";
+    }
+    return state.members.find((member) => member.id === ownerKey)?.name || "仲間";
+  }
+
+  function addSkillLog(message, kind = "system") {
+    ensureSkillState();
+    state.skills.skillLog.unshift({
+      message: String(message || "").slice(0, 140),
+      kind: String(kind || "system").slice(0, 16),
+      time: Date.now(),
+    });
+    state.skills.skillLog = state.skills.skillLog.slice(0, SKILL_LOG_LIMIT);
+  }
+
+  function grantSkill(ownerId, skillId, reason = "", options = {}) {
+    const def = getSkillDef(skillId);
+    if (!def) {
+      return null;
+    }
+    const owner = ensureSkillOwner(ownerId);
+    const alreadyOwned = Boolean(owner.owned?.[def.id]);
+    const owned = addSkillToOwner(owner, def.id, { level: options.level || 1 });
+    if (!owned || alreadyOwned) {
+      return owned;
+    }
+
+    ensureSkillState();
+    if (def.tier === "title" && !state.skills.titles.includes(def.id)) {
+      state.skills.titles.push(def.id);
+    }
+    if (def.tier === "blessing" && !state.skills.blessings.includes(def.id)) {
+      state.skills.blessings.push(def.id);
+    }
+
+    const ownerName = getSkillOwnerName(ownerId);
+    const reasonText = reason ? ` / ${reason}` : "";
+    addSkillLog(`${ownerName}が「${def.name}」を獲得した${reasonText}。`, "unlock");
+    if (!options.silent) {
+      addLog(`${ownerName}がスキル「${def.name}」を獲得しました。`, "win");
+    }
+    return owned;
+  }
+
+  function getSkillNextExp(skillId, level) {
+    const def = getSkillDef(skillId);
+    const tierFactor = {
+      basic: 1,
+      advanced: 1.22,
+      personal: 1.12,
+      unique: 1.32,
+      awakened: 1.55,
+      mythic: 2.1,
+      resistance: 0.92,
+      title: 1.08,
+      blessing: 1.18,
+    }[def?.tier] || 1;
+    return Math.floor((26 + Math.max(1, level) * 18) * tierFactor);
+  }
+
+  function getOwnerSkillExpBonus(ownerId) {
+    const effects = getSkillEffectsForContext(ownerId, { tags: ["growth", "battle", "craft", "explore"] });
+    return clamp(Number(effects.skillExpBonus) || 0, 0, 0.25);
+  }
+
+  function addSkillExp(ownerId, skillId, amount, reason = "", options = {}) {
+    const def = getSkillDef(skillId);
+    if (!def || amount <= 0) {
+      return null;
+    }
+    const bonus = options.ignoreBonus ? 0 : getOwnerSkillExpBonus(ownerId);
+    const owned = ensureOwnedSkill(ownerId, def.id);
+    if (!owned) {
+      return null;
+    }
+    if (owned.level >= (def.maxLevel || 10) && owned.exp >= getSkillNextExp(def.id, owned.level)) {
+      return owned;
+    }
+
+    const gain = Math.max(1, Math.floor(Number(amount) * (1 + bonus)));
+    owned.exp += gain;
+    if (gain >= 12 && Math.random() < 0.22) {
+      addSkillLog(`${getSkillOwnerName(ownerId)}の「${def.name}」経験値 +${gain}${reason ? ` / ${reason}` : ""}。`, "exp");
+    }
+    levelUpSkillIfNeeded(ownerId, def.id, options);
+    evolveSkillIfNeeded(ownerId, def.id, options);
+    mergeSkillsIfPossible(ownerId, options);
+    return owned;
+  }
+
+  function levelUpSkillIfNeeded(ownerId, skillId, options = {}) {
+    const def = getSkillDef(skillId);
+    const owned = getOwnedSkill(ownerId, skillId);
+    if (!def || !owned) {
+      return false;
+    }
+    let leveled = false;
+    let safety = 0;
+    while (owned.level < (def.maxLevel || 10) && owned.exp >= getSkillNextExp(def.id, owned.level) && safety < 20) {
+      safety += 1;
+      owned.exp -= getSkillNextExp(def.id, owned.level);
+      owned.level += 1;
+      leveled = true;
+      const message = `${getSkillOwnerName(ownerId)}の「${def.name}」がLv.${owned.level}になった。`;
+      addSkillLog(message, "level");
+      if (!options.silent) {
+        addLog(message, "loot");
+      }
+    }
+    return leveled;
+  }
+
+  function getSkillConditionValue(key) {
+    if (key === "bossKills") {
+      return getTotalBossClears();
+    }
+    if (key === "visitedLocations") {
+      return Object.values(state.visitedLocations || {}).filter(Boolean).length;
+    }
+    if (key === "totalClears") {
+      return getTotalClears();
+    }
+    return 0;
+  }
+
+  function canEvolveSkill(ownerId, skillId) {
+    const def = getSkillDef(skillId);
+    const owned = getOwnedSkill(ownerId, skillId);
+    if (!def?.evolveTo || !owned || owned.evolvedTo || getOwnedSkill(ownerId, def.evolveTo)) {
+      return false;
+    }
+    const condition = def.evolveCondition || {};
+    if (owned.level < (condition.level || def.maxLevel || 10)) {
+      return false;
+    }
+    for (const [key, value] of Object.entries(condition)) {
+      if (key === "level" || key === "requiredSkills") {
+        continue;
+      }
+      if (getSkillConditionValue(key) < value) {
+        return false;
+      }
+    }
+    for (const [requiredId, requiredLevel] of Object.entries(condition.requiredSkills || {})) {
+      if ((getOwnedSkill(ownerId, requiredId)?.level || 0) < requiredLevel) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function evolveSkillIfNeeded(ownerId, skillId, options = {}) {
+    if (!canEvolveSkill(ownerId, skillId)) {
+      return false;
+    }
+    const def = getSkillDef(skillId);
+    const nextDef = getSkillDef(def.evolveTo);
+    const owned = getOwnedSkill(ownerId, skillId);
+    if (!nextDef || !owned) {
+      return false;
+    }
+    owned.evolvedTo = nextDef.id;
+    owned.awakened = true;
+    grantSkill(ownerId, nextDef.id, `${def.name}の進化`, { silent: true });
+    const message = `${getSkillOwnerName(ownerId)}の「${def.name}」が限界を超え、「${nextDef.name}」へ進化した！`;
+    addSkillLog(message, "evolve");
+    if (!options.silent) {
+      addLog(message, "win");
+    }
+    pushActiveSkillPanel(ownerId, nextDef.id, "スキル進化", message, "新スキル獲得");
+    return true;
+  }
+
+  function mergeSkillsIfPossible(ownerId, options = {}) {
+    let merged = false;
+    for (const rule of SKILL_MERGE_RULES) {
+      const targetDef = getSkillDef(rule.grant);
+      if (!targetDef || getOwnedSkill(ownerId, rule.grant)) {
+        continue;
+      }
+      const ready = Object.entries(rule.required || {}).every(([skillId, level]) => {
+        return (getOwnedSkill(ownerId, skillId)?.level || 0) >= level;
+      });
+      if (!ready) {
+        continue;
+      }
+      grantSkill(ownerId, rule.grant, "スキル統合", { silent: true });
+      const materialNames = Object.keys(rule.required).map((skillId) => getSkillDef(skillId)?.name || skillId).join(" / ");
+      const message = `${getSkillOwnerName(ownerId)}の${materialNames}が統合され、「${targetDef.name}」が芽生えた。`;
+      addSkillLog(message, "merge");
+      if (!options.silent) {
+        addLog(message, "win");
+      }
+      pushActiveSkillPanel(ownerId, rule.grant, "スキル統合", message, "上位スキル獲得");
+      merged = true;
+    }
+    return merged;
+  }
+
+  function getSkillEffectsForContext(ownerId, context = {}) {
+    const owner = ensureSkillOwner(ownerId);
+    const tags = new Set(context.tags || []);
+    const effects = {};
+    for (const owned of Object.values(owner.owned || {})) {
+      const def = getSkillDef(owned.id);
+      if (!def) {
+        continue;
+      }
+      const matches = tags.size === 0 || (def.tags || []).some((tag) => tags.has(tag));
+      if (!matches) {
+        continue;
+      }
+      const scale = 0.35 + 0.65 * clamp((owned.level || 1) / (def.maxLevel || 10), 0, 1);
+      for (const [key, value] of Object.entries(def.effects || {})) {
+        effects[key] = (effects[key] || 0) + Number(value) * scale;
+      }
+    }
+    const caps = {
+      revealTelegraph: 0.35,
+      rareFindRate: 0.16,
+      momentumBonus: 12,
+      skillExpBonus: 0.25,
+      supportRate: 0.18,
+      dodgeRate: 0.18,
+      damageReduction: 0.22,
+      trapAvoidRate: 0.24,
+      herbFindRate: 0.22,
+      craftBonus: 0.16,
+      qualityRate: 0.14,
+      lossReduction: 0.22,
+      bonusDamageRate: 0.22,
+      bonusDamageScale: 0.22,
+    };
+    for (const [key, max] of Object.entries(caps)) {
+      if (effects[key]) {
+        effects[key] = clamp(effects[key], 0, max);
+      }
+    }
+    return effects;
+  }
+
+  function resolveSkillId(skillId) {
+    const raw = String(skillId || "");
+    return SKILL_ID_ALIASES[raw] || raw;
+  }
+
+  function getSkillDef(skillId) {
+    return SKILL_DEF_BY_ID[resolveSkillId(skillId)] || null;
+  }
+
+  function getSkillRank(defOrId) {
+    const def = typeof defOrId === "string" ? getSkillDef(defOrId) : defOrId;
+    return def?.rank || def?.tier || "common";
+  }
+
+  function getSkillDomain(defOrId) {
+    const def = typeof defOrId === "string" ? getSkillDef(defOrId) : defOrId;
+    return def?.domain || def?.category || "battle";
+  }
+
+  function createEmptySkillEquipSlots() {
+    return Object.fromEntries(SKILL_RANK_ORDER.map((rank) => [rank, []]));
+  }
+
+  function createSkillOwner() {
+    return { owned: {}, equipped: createEmptySkillEquipSlots() };
+  }
+
+  function normalizeEquippedSkills(equipped, owned = {}) {
+    const normalized = createEmptySkillEquipSlots();
+    const pushSkill = (skillId) => {
+      const def = getSkillDef(skillId);
+      if (!def || !owned[def.id]) return;
+      const rank = getSkillRank(def);
+      if (!normalized[rank]) normalized[rank] = [];
+      if (normalized[rank].includes(def.id)) return;
+      if (normalized[rank].length >= (SKILL_EQUIP_LIMITS[rank] || 0)) return;
+      normalized[rank].push(def.id);
+    };
+
+    if (Array.isArray(equipped)) {
+      equipped.forEach(pushSkill);
+    } else if (equipped && typeof equipped === "object") {
+      for (const rank of SKILL_RANK_ORDER) {
+        const list = Array.isArray(equipped[rank]) ? equipped[rank] : [];
+        list.forEach(pushSkill);
+      }
+    }
+    return normalized;
+  }
+
+  function createDefaultSkillState() {
+    const owner = createSkillOwner();
+    for (const skillId of PLAYER_STARTING_SKILLS) {
+      const entry = addSkillToOwner(owner, skillId, { silent: true });
+      if (entry) {
+        const rank = getSkillRank(entry.id);
+        if ((owner.equipped[rank] || []).length < (SKILL_EQUIP_LIMITS[rank] || 0)) {
+          owner.equipped[rank].push(entry.id);
+        }
+      }
+    }
+    const skills = {
+      owners: { player: owner },
+      discovered: Object.fromEntries(Object.keys(owner.owned).map((skillId) => [skillId, true])),
+      skillLog: [],
+      titles: [],
+      blessings: [],
+    };
+    return attachSkillStateAliases(skills);
+  }
+
+  function createSkillEntry(skillId, source = {}) {
+    const def = getSkillDef(skillId);
+    if (!def) {
+      return null;
+    }
+    return {
+      id: def.id,
+      level: clamp(Math.floor(Number(source.level) || 1), 1, def.maxLevel || 10),
+      exp: Math.max(0, Math.floor(Number(source.exp) || 0)),
+      awakened: Boolean(source.awakened),
+      evolved: Boolean(source.evolved || source.awakened),
+      merged: Boolean(source.merged),
+      evolvedTo: getSkillDef(Array.isArray(source.evolvedTo) ? source.evolvedTo[0] : source.evolvedTo)?.id || "",
+      unlockedAt: Math.max(0, Number(source.unlockedAt) || Date.now()),
+    };
+  }
+
+  function addSkillToOwner(owner, skillId, options = {}) {
+    const def = getSkillDef(skillId);
+    if (!owner || !def) {
+      return null;
+    }
+    owner.owned = owner.owned && typeof owner.owned === "object" ? owner.owned : {};
+    owner.equipped = normalizeEquippedSkills(owner.equipped, owner.owned);
+    if (!owner.owned[def.id]) {
+      owner.owned[def.id] = createSkillEntry(def.id, { level: options.level || 1, unlockedAt: options.unlockedAt });
+    }
+    return owner.owned[def.id];
+  }
+
+  function normalizeSkillOwner(owner) {
+    const normalized = createSkillOwner();
+    const sourceOwned = owner?.owned && typeof owner.owned === "object" ? owner.owned : {};
+    for (const [skillId, entry] of Object.entries(sourceOwned)) {
+      const normalizedEntry = createSkillEntry(skillId, entry);
+      if (normalizedEntry) {
+        normalized.owned[normalizedEntry.id] = normalizedEntry;
+      }
+    }
+    normalized.equipped = normalizeEquippedSkills(owner?.equipped, normalized.owned);
+    return normalized;
+  }
+
+  function getDefaultSkillsForMember(member, index = 0) {
+    if (!member) {
+      return [];
+    }
+    const skillIds = new Set(member.id === "hero" ? PLAYER_STARTING_SKILLS : []);
+    const profilePreset = PROFILE_SKILL_PRESETS[member.profileId] || [];
+    const jobPreset = JOB_SKILL_PRESETS[member.jobId] || [];
+    for (const skillId of [...profilePreset, ...jobPreset]) {
+      if (getSkillDef(skillId)) skillIds.add(getSkillDef(skillId).id);
+    }
+    if (member.id === "hero") {
+      const job = JOB_BY_ID[member.jobId];
+      if (job?.category === "combat") skillIds.add("blade_basics");
+      if (job?.category === "craft") skillIds.add("smith_soul");
+      if (job?.category === "gather") skillIds.add("trap_reading");
+    } else if (index > 0 && skillIds.size === 0) {
+      skillIds.add(index % 2 === 0 ? "trap_reading" : "healing_light");
+    }
+    return Array.from(skillIds).filter((skillId) => getSkillDef(skillId));
+  }
+
+  function attachSkillStateAliases(skills) {
+    skills.owners = skills.owners && typeof skills.owners === "object" ? skills.owners : {};
+    skills.owners.player = normalizeSkillOwner(skills.owners.player);
+    skills.player = skills.owners.player;
+    skills.companions = {};
+    for (const [ownerId, owner] of Object.entries(skills.owners)) {
+      if (ownerId !== "player") {
+        skills.companions[ownerId] = owner;
+      }
+    }
+    return skills;
+  }
+
+  function normalizeSkillState(skills, members = []) {
+    const sourceOwners = skills?.owners && typeof skills.owners === "object" ? skills.owners : {};
+    const normalized = {
+      owners: {},
+      discovered: skills?.discovered && typeof skills.discovered === "object" ? { ...skills.discovered } : {},
+      skillLog: Array.isArray(skills?.skillLog)
+        ? skills.skillLog.slice(0, SKILL_LOG_LIMIT).map((entry) => ({
+            message: String(entry?.message || "").slice(0, 140),
+            kind: String(entry?.kind || "system").slice(0, 16),
+            time: Math.max(0, Number(entry?.time) || Date.now()),
+          }))
+        : [],
+      titles: Array.isArray(skills?.titles) ? skills.titles.filter((skillId) => getSkillDef(skillId)).slice(0, 20) : [],
+      blessings: Array.isArray(skills?.blessings) ? skills.blessings.filter((skillId) => getSkillDef(skillId)).slice(0, 20) : [],
+    };
+
+    normalized.owners.player = normalizeSkillOwner(sourceOwners.player || skills?.player);
+    const oldCompanions = skills?.companions && typeof skills.companions === "object" ? skills.companions : {};
+    for (const [ownerId, owner] of Object.entries(sourceOwners)) {
+      if (ownerId !== "player") {
+        normalized.owners[ownerId] = normalizeSkillOwner(owner);
+      }
+    }
+    for (const [ownerId, owner] of Object.entries(oldCompanions)) {
+      if (!normalized.owners[ownerId]) {
+        normalized.owners[ownerId] = normalizeSkillOwner(owner);
+      }
+    }
+
+    for (const skillId of PLAYER_STARTING_SKILLS) {
+      addSkillToOwner(normalized.owners.player, skillId, { silent: true });
+    }
+    normalized.owners.player.equipped = normalizeEquippedSkills(normalized.owners.player.equipped, normalized.owners.player.owned);
+    for (const skillId of PLAYER_STARTING_SKILLS) {
+      const def = getSkillDef(skillId);
+      const rank = getSkillRank(def);
+      if (def && !normalized.owners.player.equipped[rank].includes(def.id) && normalized.owners.player.equipped[rank].length < (SKILL_EQUIP_LIMITS[rank] || 0)) {
+        normalized.owners.player.equipped[rank].push(def.id);
+      }
+    }
+
+    for (const [index, member] of members.entries()) {
+      if (!member || member.id === "hero") continue;
+      const owner = normalizeSkillOwner(normalized.owners[member.id]);
+      for (const skillId of getDefaultSkillsForMember(member, index)) {
+        addSkillToOwner(owner, skillId, { silent: true });
+      }
+      normalized.owners[member.id] = owner;
+    }
+
+    for (const owner of Object.values(normalized.owners)) {
+      owner.equipped = normalizeEquippedSkills(owner.equipped, owner.owned);
+      for (const skillId of Object.keys(owner.owned || {})) {
+        normalized.discovered[skillId] = true;
+      }
+    }
+
+    return attachSkillStateAliases(normalized);
+  }
+
+  function ensureSkillState() {
+    state.skills = normalizeSkillState(state.skills, state.members || []);
+    return state.skills;
+  }
+
+  function ensureSkillOwner(ownerId) {
+    const skills = ensureSkillState();
+    const ownerKey = getSkillOwnerKey(ownerId);
+    if (!skills.owners[ownerKey]) {
+      skills.owners[ownerKey] = createSkillOwner();
+    }
+    skills.owners[ownerKey] = normalizeSkillOwner(skills.owners[ownerKey]);
+    if (ownerKey === "player") {
+      for (const skillId of getDefaultSkillsForMember(state.members?.[0], 0)) {
+        addSkillToOwner(skills.owners.player, skillId, { silent: true });
+      }
+    } else {
+      const memberIndex = state.members.findIndex((member) => member.id === ownerKey);
+      if (memberIndex >= 0) {
+        for (const skillId of getDefaultSkillsForMember(state.members[memberIndex], memberIndex)) {
+          addSkillToOwner(skills.owners[ownerKey], skillId, { silent: true });
+        }
+      }
+    }
+    return attachSkillStateAliases(skills).owners[ownerKey];
+  }
+
+  function getOwnedSkill(ownerId, skillId) {
+    const def = getSkillDef(skillId);
+    if (!def) return null;
+    const owner = ensureSkillOwner(ownerId);
+    return owner.owned?.[def.id] || null;
+  }
+
+  function hasSkill(ownerId, skillId) {
+    return Boolean(getOwnedSkill(ownerId, skillId));
+  }
+
+  function ensureOwnedSkill(ownerId, skillId) {
+    const def = getSkillDef(skillId);
+    if (!def) {
+      return null;
+    }
+    const owner = ensureSkillOwner(ownerId);
+    const owned = addSkillToOwner(owner, def.id, { silent: true });
+    ensureSkillState().discovered[def.id] = true;
+    return owned;
+  }
+
+  function getOwnedSkillsByRank(ownerId, rank) {
+    const owner = ensureSkillOwner(ownerId);
+    return Object.values(owner.owned || {}).filter((owned) => getSkillRank(owned.id) === rank);
+  }
+
+  function getEquippedSkills(ownerId) {
+    const owner = ensureSkillOwner(ownerId);
+    const ids = [];
+    for (const rank of SKILL_RANK_ORDER) {
+      ids.push(...(owner.equipped?.[rank] || []));
+    }
+    return ids.map((skillId) => getOwnedSkill(ownerId, skillId)).filter(Boolean);
+  }
+
+  function getPassiveAlwaysOnSkills(ownerId) {
+    const owner = ensureSkillOwner(ownerId);
+    return Object.values(owner.owned || {}).filter((owned) => {
+      const def = getSkillDef(owned.id);
+      return def && SKILL_ALWAYS_ON_DOMAINS.has(getSkillDomain(def));
+    });
+  }
+
+  function isSkillEquipped(ownerId, skillId) {
+    const def = getSkillDef(skillId);
+    if (!def) return false;
+    const owner = ensureSkillOwner(ownerId);
+    return (owner.equipped?.[getSkillRank(def)] || []).includes(def.id);
+  }
+
+  function canEquipSkill(ownerId, skillId) {
+    const def = getSkillDef(skillId);
+    const owned = getOwnedSkill(ownerId, skillId);
+    if (!def || !owned) return { ok: false, reason: "未習得です" };
+    const rank = getSkillRank(def);
+    const owner = ensureSkillOwner(ownerId);
+    const equipped = owner.equipped?.[rank] || [];
+    if (equipped.includes(def.id)) return { ok: false, reason: "装備中です" };
+    if (equipped.length >= (SKILL_EQUIP_LIMITS[rank] || 0)) return { ok: false, reason: `${SKILL_RANK_LABELS[rank] || rank}は${SKILL_EQUIP_LIMITS[rank]}個までです` };
+    return { ok: true, reason: "" };
+  }
+
+  function equipSkill(ownerId, skillId) {
+    const def = getSkillDef(skillId);
+    const check = canEquipSkill(ownerId, skillId);
+    if (!def || !check.ok) {
+      if (check.reason) addSkillLog(check.reason, "system");
+      return false;
+    }
+    const owner = ensureSkillOwner(ownerId);
+    const rank = getSkillRank(def);
+    owner.equipped[rank].push(def.id);
+    addSkillLog(`${getSkillOwnerName(ownerId)}が《${def.name}》を装備しました。`, "equip");
+    return true;
+  }
+
+  function unequipSkill(ownerId, skillId) {
+    const def = getSkillDef(skillId);
+    if (!def) return false;
+    const owner = ensureSkillOwner(ownerId);
+    const rank = getSkillRank(def);
+    const before = owner.equipped?.[rank] || [];
+    owner.equipped[rank] = before.filter((id) => id !== def.id);
+    addSkillLog(`${getSkillOwnerName(ownerId)}が《${def.name}》を外しました。`, "equip");
+    return before.length !== owner.equipped[rank].length;
+  }
+
+  function grantSkill(ownerId, skillId, reason = "", options = {}) {
+    const def = getSkillDef(skillId);
+    if (!def) {
+      return null;
+    }
+    const owner = ensureSkillOwner(ownerId);
+    const alreadyOwned = Boolean(owner.owned?.[def.id]);
+    const owned = addSkillToOwner(owner, def.id, { level: options.level || 1 });
+    if (!owned) return null;
+    ensureSkillState().discovered[def.id] = true;
+    if (alreadyOwned) {
+      return owned;
+    }
+    const rank = getSkillRank(def);
+    if (!isSkillEquipped(ownerId, def.id) && (owner.equipped[rank] || []).length < (SKILL_EQUIP_LIMITS[rank] || 0)) {
+      owner.equipped[rank].push(def.id);
+    }
+    const ownerName = getSkillOwnerName(ownerId);
+    const reasonText = reason ? ` / ${reason}` : "";
+    addSkillLog(`${ownerName}が《${def.name}》を獲得しました${reasonText}。`, "unlock");
+    if (!options.silent) {
+      addLog(`${ownerName}がスキル《${def.name}》を獲得しました。`, "win");
+    }
+    return owned;
+  }
+
+  function getSkillNextExp(skillId, level) {
+    const rank = getSkillRank(skillId);
+    const tierFactor = { common: 1, extra: 1.35, unique: 1.9, ultimate: 3.2 }[rank] || 1;
+    return Math.floor((28 + Math.max(1, level) * 18) * tierFactor);
+  }
+
+  function getOwnerSkillExpBonus(ownerId) {
+    const effects = getSkillEffectsForContext(ownerId, { tags: ["growth", "battle", "craft", "explore"], includeAlways: true });
+    return clamp((Number(effects.skillExpPct) || 0) + (Number(effects.skillExpBonus) || 0), 0, 0.35);
+  }
+
+  function canEvolveSkill(ownerId, skillId) {
+    const def = getSkillDef(skillId);
+    const owned = getOwnedSkill(ownerId, skillId);
+    const evolveTargets = Array.isArray(def?.evolveTo) ? def.evolveTo : def?.evolveTo ? [def.evolveTo] : [];
+    if (!evolveTargets.length || !owned || owned.evolvedTo) {
+      return false;
+    }
+    const nextDef = evolveTargets.map((targetId) => getSkillDef(targetId)).find(Boolean);
+    if (!nextDef || getOwnedSkill(ownerId, nextDef.id)) {
+      return false;
+    }
+    const condition = def.evolveCondition || {};
+    const requiredLevel = condition.level || (getSkillRank(def) === "ultimate" ? def.maxLevel || 5 : Math.min(def.maxLevel || 10, 10));
+    if (owned.level < requiredLevel) {
+      return false;
+    }
+    for (const [key, value] of Object.entries(condition)) {
+      if (key === "level" || key === "requiredSkills") continue;
+      if (getSkillConditionValue(key) < value) return false;
+    }
+    for (const [requiredId, requiredLevelValue] of Object.entries(condition.requiredSkills || {})) {
+      if ((getOwnedSkill(ownerId, requiredId)?.level || 0) < requiredLevelValue) return false;
+    }
+    return true;
+  }
+
+  function evolveSkillIfNeeded(ownerId, skillId, options = {}) {
+    if (!canEvolveSkill(ownerId, skillId)) {
+      return false;
+    }
+    const def = getSkillDef(skillId);
+    const targets = Array.isArray(def.evolveTo) ? def.evolveTo : [def.evolveTo];
+    const nextDef = targets.map((targetId) => getSkillDef(targetId)).find(Boolean);
+    const owned = getOwnedSkill(ownerId, skillId);
+    if (!nextDef || !owned) {
+      return false;
+    }
+    owned.evolvedTo = nextDef.id;
+    owned.evolved = true;
+    owned.awakened = getSkillRank(nextDef) === "ultimate";
+    grantSkill(ownerId, nextDef.id, `${def.name}の進化`, { silent: true });
+    const message = `${getSkillOwnerName(ownerId)}の《${def.name}》が研ぎ澄まされ、《${nextDef.name}》へ進化しました。`;
+    addSkillLog(message, "evolve");
+    if (!options.silent) {
+      addLog(message, "win");
+    }
+    pushActiveSkillPanel(ownerId, nextDef.id, "スキル進化", message, "新スキル獲得");
+    return true;
+  }
+
+  function mergeSkillsIfPossible(ownerId, options = {}) {
+    let merged = false;
+    for (const rule of SKILL_MERGE_RULES) {
+      const targetDef = getSkillDef(rule.grant);
+      if (!targetDef || getOwnedSkill(ownerId, rule.grant)) {
+        continue;
+      }
+      const ready = Object.entries(rule.required || {}).every(([skillId, level]) => {
+        return (getOwnedSkill(ownerId, skillId)?.level || 0) >= level;
+      });
+      if (!ready) continue;
+      for (const skillId of Object.keys(rule.required || {})) {
+        const owned = getOwnedSkill(ownerId, skillId);
+        if (owned) owned.merged = true;
+      }
+      grantSkill(ownerId, rule.grant, "スキル統合", { silent: true });
+      const materialNames = Object.keys(rule.required).map((requiredId) => getSkillDef(requiredId)?.name || requiredId).join(" / ");
+      const message = `${getSkillOwnerName(ownerId)}の${materialNames}が共鳴し、《${targetDef.name}》が覚醒しました。`;
+      addSkillLog(message, getSkillRank(targetDef) === "ultimate" ? "awaken" : "merge");
+      if (!options.silent) {
+        addLog(message, "win");
+      }
+      pushActiveSkillPanel(ownerId, rule.grant, "スキル統合", message, `${SKILL_RANK_LABELS[getSkillRank(targetDef)] || "上位スキル"}獲得`);
+      merged = true;
+    }
+    return merged;
+  }
+
+  function getSkillEffectsForContext(ownerId, context = {}) {
+    const tags = new Set(context.tags || []);
+    const domain = context.domain || "";
+    const effects = {};
+    const activeEntries = [...getEquippedSkills(ownerId), ...getPassiveAlwaysOnSkills(ownerId)];
+    const used = new Set();
+    for (const owned of activeEntries) {
+      if (!owned || used.has(owned.id)) continue;
+      used.add(owned.id);
+      const def = getSkillDef(owned.id);
+      if (!def) continue;
+      const matchesTag = tags.size === 0 || (def.tags || []).some((tag) => tags.has(tag));
+      const matchesDomain = !domain || getSkillDomain(def) === domain;
+      if (!matchesTag && !matchesDomain) continue;
+      const rank = getSkillRank(def);
+      const rankWeight = { common: 1, extra: 1.08, unique: 1.16, ultimate: 1.25 }[rank] || 1;
+      const scale = rankWeight * (0.35 + 0.65 * clamp((owned.level || 1) / (def.maxLevel || 10), 0, 1));
+      for (const [key, value] of Object.entries(def.effects || {})) {
+        effects[key] = (effects[key] || 0) + Number(value) * scale;
+      }
+    }
+    const caps = {
+      atkPct: 0.55,
+      defPct: 0.55,
+      magPct: 0.55,
+      hpPct: 0.45,
+      critRate: 0.35,
+      critDamagePct: 0.65,
+      dodgeRate: 0.32,
+      guardRate: 0.35,
+      counterRate: 0.3,
+      bossDamagePct: 0.45,
+      enemyDamageDownPct: 0.35,
+      tensionCostDown: 0.35,
+      telegraphRevealRate: 0.45,
+      interruptRate: 0.38,
+      autoHealRate: 0.28,
+      autoHealPct: 0.35,
+      supportTriggerRate: 0.32,
+      comboDamagePct: 0.45,
+      exploreSpeedPct: 0.45,
+      scoutPct: 0.45,
+      rareFindRate: 0.25,
+      hiddenRouteRate: 0.3,
+      trapAvoidRate: 0.35,
+      dangerDownPct: 0.35,
+      gatherAmountPct: 0.45,
+      rareMaterialRate: 0.28,
+      eventFindRate: 0.3,
+      travelSpeedPct: 0.4,
+      craftSuccessPct: 0.35,
+      craftQualityPct: 0.45,
+      upgradeSuccessPct: 0.28,
+      materialRefundRate: 0.25,
+      rareCraftRate: 0.2,
+      alchemyBonusPct: 0.35,
+      affectionGainPct: 0.4,
+      heroineSupportRate: 0.3,
+      companionExpPct: 0.35,
+      familiarExpPct: 0.35,
+      familiarAssistRate: 0.28,
+      giftEffectPct: 0.35,
+      expGainPct: 0.35,
+      jobExpPct: 0.35,
+      skillExpPct: 0.35,
+      goldGainPct: 0.35,
+      dropRatePct: 0.3,
+      poisonResistPct: 0.7,
+      fireResistPct: 0.7,
+      iceResistPct: 0.7,
+      sleepResistPct: 0.7,
+      curseResistPct: 0.7,
+      physicalResistPct: 0.5,
+      magicResistPct: 0.5,
+      debuffResistPct: 0.55,
+    };
+    for (const [key, max] of Object.entries(caps)) {
+      if (effects[key]) effects[key] = clamp(effects[key], 0, max);
+    }
+    return effects;
+  }
+
+  function pushActiveSkillPanel(ownerId, skillId, title, text, impact = "") {
+    const def = getSkillDef(skillId);
+    const context = getActiveBattleContext();
+    if (!def || !context?.encounter) {
+      return;
+    }
+    pushMangaPanel(context.encounter, "support", title || def.name, text, impact || def.name);
+  }
+
+  function grantSkillExpToParty(skillIds, amount, reason, options = {}) {
+    const ids = Array.isArray(skillIds) ? skillIds : [skillIds];
+    for (const skillId of ids) {
+      addSkillExp("player", skillId, amount, reason, options);
+    }
+    for (const member of state.members.filter((candidate) => candidate.id !== "hero")) {
+      for (const skillId of ids) {
+        if (getOwnedSkill(member.id, skillId)) {
+          addSkillExp(member.id, skillId, Math.max(1, Math.floor(amount * 0.72)), reason, options);
+        }
+      }
+    }
+  }
+
+  function grantResistanceExpByDamage(type, amount, options = {}) {
+    const map = {
+      poison: "poison_resistance",
+      fire: "flame_resistance",
+      sleep: "sleep_resistance",
+      physical: "physical_resistance",
+      curse: "curse_resistance",
+    };
+    const skillId = map[type] || "physical_resistance";
+    const gain = Math.max(1, Math.floor(Number(amount) / 3) + 2);
+    grantSkillExpToParty(skillId, gain, "被害経験", { ...options, ignoreBonus: true });
+  }
+
+  function pickRandomSupportSkill(ownerId, context = {}) {
+    const owner = ensureSkillOwner(ownerId);
+    const tags = new Set(context.tags || ["support", "battle"]);
+    const candidates = Object.values(owner.owned || {}).filter((owned) => {
+      const def = getSkillDef(owned.id);
+      return def && (def.tags || []).some((tag) => tags.has(tag));
+    });
+    if (!candidates.length) {
+      return null;
+    }
+    const picked = candidates[randomInt(0, candidates.length - 1)];
+    return getSkillDef(picked.id);
+  }
+
+  function tryUseBattleSkill(ownerId, skillId, chance, handler, activations, options = {}) {
+    if (activations.length >= (options.limit || 2)) {
+      return 0;
+    }
+    const owned = getOwnedSkill(ownerId, skillId);
+    const def = getSkillDef(skillId);
+    if (!owned || !def) {
+      return 0;
+    }
+    const levelBonus = (owned.level || 1) / Math.max(1, def.maxLevel || 10) * 0.06;
+    if (Math.random() > clamp(chance + levelBonus, 0, 0.38)) {
+      return 0;
+    }
+    const result = handler(owned, def) || {};
+    activations.push(def.id);
+    addSkillExp(ownerId, def.id, result.exp || 8, result.reason || "戦闘発動", { silent: options.silent });
+    return result.bonusDamage || 0;
+  }
+
+  function applyBattleSkillEffects(encounter, actionContext = {}) {
+    if (!encounter) {
+      return 0;
+    }
+    Object.assign(encounter, normalizeEncounterScene(encounter));
+    const { stats = aggregateStats(), location = getSelectedLocation(), commandConfig = getBattleCommandConfig("attack"), silent = true } = actionContext;
+    const activations = [];
+    let bonusDamage = 0;
+    const analysisId = getOwnedSkill("player", "starlight_wisdom") ? "starlight_wisdom" : "starlight_analysis";
+
+    bonusDamage += tryUseBattleSkill("player", analysisId, commandConfig.observe || encounter.telegraphPending ? 0.28 : 0.08, (owned, def) => {
+      const before = encounter.momentum;
+      encounter.observed = true;
+      encounter.telegraph = encounter.telegraphPending ? rollEnemyTelegraph(encounter, location, true) : `解析済み: ${getNeutralTelegraph(encounter)}`;
+      encounter.momentum = clamp(encounter.momentum + Math.floor(2 + owned.level * 0.7), -100, 100);
+      pushMangaPanel(
+        encounter,
+        "support",
+        def.name,
+        `${getSkillOwnerName("player")}の視界に、${encounter.name}の魔力の流れが星図のように浮かぶ。`,
+        `予兆明確化 / 戦況 ${formatSceneDelta(encounter.momentum - before)}`,
+      );
+      return { exp: 10, reason: "予兆解析" };
+    }, activations, { silent });
+
+    const fireSkillId = getOwnedSkill("player", "azure_flame_barrage") ? "azure_flame_barrage" : "spark_art";
+    if (["attack", "skill"].includes(commandConfig.id)) {
+      bonusDamage += tryUseBattleSkill("player", fireSkillId, commandConfig.id === "skill" ? 0.18 : 0.11, (owned, def) => {
+        const damage = Math.max(2, Math.floor((stats.mag * 0.18 + stats.atk * 0.06 + owned.level * 3) * randomFloat(0.75, 1.18)));
+        encounter.hp = Math.max(0, encounter.hp - damage);
+        encounter.lastPlayerDamage = (encounter.lastPlayerDamage || 0) + damage;
+        encounter.tension = clamp(encounter.tension + Math.floor(1 + owned.level / 4), 0, 100);
+        pushMangaPanel(
+          encounter,
+          "hero",
+          def.name,
+          `${getSkillOwnerName("player")}の一撃に青白い火花が走り、敵の守りを焼いた。`,
+          `敵HP -${damage} / 緊張 +${Math.floor(1 + owned.level / 4)}`,
+        );
+        return { bonusDamage: damage, exp: 9, reason: "攻撃発動" };
+      }, activations, { silent });
+    }
+
+    if (commandConfig.guard || encounter.telegraphPending) {
+      const guardSkillId = getOwnedSkill("player", "life_ward") ? "life_ward" : "ironwall";
+      bonusDamage += tryUseBattleSkill("player", guardSkillId, commandConfig.guard ? 0.24 : 0.12, (owned, def) => {
+        const before = encounter.momentum;
+        encounter.supportGuard = true;
+        encounter.sceneDamageFactor = Math.min(Number(encounter.sceneDamageFactor) || 1, 0.78);
+        encounter.momentum = clamp(encounter.momentum + Math.floor(2 + owned.level * 0.55), -100, 100);
+        pushMangaPanel(
+          encounter,
+          "support",
+          def.name,
+          `${def.name}が前衛の足元に薄い光を敷き、衝撃の芯を逃がした。`,
+          `被害軽減 / 戦況 ${formatSceneDelta(encounter.momentum - before)}`,
+        );
+        return { exp: 10, reason: "防御発動" };
+      }, activations, { silent });
+
+      const shadowSkillId = getOwnedSkill("player", "shadow_stitch_dance") ? "shadow_stitch_dance" : "shadow_pin";
+      bonusDamage += tryUseBattleSkill("player", shadowSkillId, encounter.telegraphPending ? 0.2 : 0.08, (owned, def) => {
+        const before = encounter.momentum;
+        encounter.sceneDamageFactor = Math.min(Number(encounter.sceneDamageFactor) || 1, 0.82);
+        encounter.momentum = clamp(encounter.momentum + Math.floor(3 + owned.level * 0.65), -100, 100);
+        pushMangaPanel(
+          encounter,
+          "support",
+          def.name,
+          `${encounter.name}の影が一瞬だけ縫い止められ、大技の踏み込みが鈍る。`,
+          `妨害成功 / 戦況 ${formatSceneDelta(encounter.momentum - before)}`,
+        );
+        return { exp: 10, reason: "大技妨害" };
+      }, activations, { silent });
+    }
+
+    const speedSkillId = getOwnedSkill("player", "shadow_runner") ? "shadow_runner" : "flash_step";
+    if (activations.length < 2 && ["attack", "observe"].includes(commandConfig.id)) {
+      bonusDamage += tryUseBattleSkill("player", speedSkillId, 0.1, (owned, def) => {
+        const before = encounter.momentum;
+        encounter.momentum = clamp(encounter.momentum + Math.floor(2 + owned.level * 0.45), -100, 100);
+        encounter.distance = shiftBattleDistance(encounter.distance, "observe");
+        pushMangaPanel(
+          encounter,
+          "hero",
+          def.name,
+          `${getSkillOwnerName("player")}が半歩だけ速く動き、敵の視線から外れた。`,
+          `間合い調整 / 戦況 ${formatSceneDelta(encounter.momentum - before)}`,
+        );
+        return { exp: 8, reason: "間合い操作" };
+      }, activations, { silent });
+    }
+
+    if (bonusDamage > 0) {
+      grantSkillExpToParty("magic_core_cycle", Math.max(2, Math.floor(bonusDamage / 8)), "スキル追撃", { silent: true });
+    }
+    return bonusDamage;
+  }
+
+  function applyExploreSkillEffects(location, context = {}) {
+    if (!location || context.silent) {
+      return;
+    }
+    const effects = getSkillEffectsForContext("player", { tags: ["explore", "gather", "scout", "trap"] });
+    const analysisSkillId = getOwnedSkill("player", "starlight_wisdom") ? "starlight_wisdom" : "starlight_analysis";
+    if (getOwnedSkill("player", analysisSkillId) && Math.random() < 0.08 + (effects.rareFindRate || 0)) {
+      const rewardKey = Math.random() < 0.18 ? "relic" : "gold";
+      const amount = rewardKey === "relic" ? 1 : randomInt(2, 5);
+      addResource(rewardKey, amount);
+      pushExplorePanel(
+        "support",
+        getSkillDef(analysisSkillId).name,
+        `${getSkillOwnerName("player")}が草むらの奥に隠れた魔力反応を捉えた。`,
+        `${RESOURCE_LABELS[rewardKey]} +${amount}`,
+      );
+      addSkillExp("player", analysisSkillId, 9, "探索発見", { silent: true });
+    }
+
+    const trapSkillId = getOwnedSkill("player", "danger_foresight") ? "danger_foresight" : "trap_reading";
+    if (getOwnedSkill("player", trapSkillId) && Math.random() < 0.08 + (effects.trapAvoidRate || 0) * 0.5) {
+      pushExplorePanel(
+        "support",
+        getSkillDef(trapSkillId).name,
+        `${getSkillDef(trapSkillId).name}が働き、古い魔導罠の起動線を避けた。`,
+        "危険回避 / 探索継続",
+      );
+      addSkillExp("player", trapSkillId, 8, "罠回避", { silent: true });
+    }
+
+    if (getOwnedSkill("player", "herb_scent") && Math.random() < 0.1 + (effects.herbFindRate || 0) * 0.45) {
+      addResource("herb", 1);
+      pushExplorePanel("support", "薬草嗅ぎ", "風に混じる青い香りを追い、薬草を追加で見つけた。", "薬草 +1");
+      addSkillExp("player", "herb_scent", 7, "薬草発見", { silent: true });
+    }
+
+    grantSkillExpToParty(["pioneer_title", "trap_reading"], 2 + Math.floor(location.danger || 0), "探索進行", { silent: true });
+  }
+
+  function grantBattleVictorySkillExp(encounter, location, amount, options = {}) {
+    const base = Math.max(4, Math.floor(amount));
+    grantSkillExpToParty(["magic_core_cycle", "starlight_analysis", "flash_step"], base, "戦闘勝利", options);
+    if (encounter?.isStrongEnemy) {
+      grantSkillExpToParty(["curse_resistance", "pioneer_title"], base + 4, "強敵撃破", options);
+    }
+    if ((location?.danger || 0) >= 5) {
+      grantSkillExpToParty("physical_resistance", Math.floor(base * 0.7), "高危険度戦闘", { ...options, ignoreBonus: true });
+    }
+  }
+
+  function grantBossSkillExp(boss, options = {}) {
+    const amount = Math.max(18, Math.floor((boss?.power || 100) / 18));
+    grantSkillExpToParty(["magic_core_cycle", "starlight_analysis", "curse_resistance", "pioneer_title"], amount, "ボス討伐", options);
+  }
+
+  function grantCraftSkillExp(amount, reason, options = {}) {
+    grantSkillExpToParty(["smith_soul", "magic_core_cycle"], Math.max(3, amount), reason, options);
+  }
+
+  function grantBondSkillExp(amount, reason, options = {}) {
+    grantSkillExpToParty(["lovebind_blessing", "healing_light", "prayer_blessing"], Math.max(2, amount), reason, options);
+  }
+
+  function applyBattleSkillEffects(encounter, actionContext = {}) {
+    if (!encounter) {
+      return 0;
+    }
+    Object.assign(encounter, normalizeEncounterScene(encounter));
+    const { stats = aggregateStats(), location = getSelectedLocation(), commandConfig = getBattleCommandConfig("attack"), silent = true } = actionContext;
+    const effects = getSkillEffectsForContext("player", { tags: ["battle", "magic", "guard", "analyze", "support"] });
+    const activations = [];
+    let bonusDamage = 0;
+    const analysisId = getOwnedSkill("player", "starlight_wisdom")
+      ? "starlight_wisdom"
+      : getOwnedSkill("player", "starlight_analysis")
+        ? "starlight_analysis"
+        : "simple_appraisal";
+
+    bonusDamage += tryUseBattleSkill("player", analysisId, (commandConfig.observe || encounter.telegraphPending ? 0.22 : 0.06) + (effects.telegraphRevealRate || 0) * 0.25, (owned, def) => {
+      const before = encounter.momentum;
+      encounter.observed = true;
+      encounter.telegraph = encounter.telegraphPending ? rollEnemyTelegraph(encounter, location, true) : `解析済み: ${getNeutralTelegraph(encounter)}`;
+      encounter.momentum = clamp(encounter.momentum + Math.floor(2 + owned.level * 0.65 + (effects.momentumOnHit || 0) * 0.2), -100, 100);
+      pushMangaPanel(
+        encounter,
+        "support",
+        def.name,
+        `${getSkillOwnerName("player")}が敵の魔力の流れを読み、次の一手を見切った。`,
+        `予兆明確化 / 戦況 ${formatSceneDelta(encounter.momentum - before)}`,
+      );
+      return { exp: 10, reason: "予兆解析" };
+    }, activations, { silent });
+
+    const fireSkillId = getOwnedSkill("player", "azure_flame_barrage") ? "azure_flame_barrage" : "spark_art";
+    if (["attack", "skill"].includes(commandConfig.id)) {
+      bonusDamage += tryUseBattleSkill("player", fireSkillId, commandConfig.id === "skill" ? 0.18 : 0.1, (owned, def) => {
+        const damage = Math.max(2, Math.floor((stats.mag * (0.14 + (effects.magPct || 0) * 0.18) + stats.atk * 0.05 + owned.level * 3 + (effects.damageFlat || 0)) * randomFloat(0.75, 1.18)));
+        encounter.hp = Math.max(0, encounter.hp - damage);
+        encounter.lastPlayerDamage = (encounter.lastPlayerDamage || 0) + damage;
+        encounter.tension = clamp(encounter.tension + Math.floor(1 + owned.level / 4 + (effects.tensionGain || 0) * 0.1), 0, 100);
+        pushMangaPanel(
+          encounter,
+          "hero",
+          def.name,
+          `${getSkillOwnerName("player")}の一撃に星色の火花が重なり、敵の守りを焦がした。`,
+          `敵HP -${damage} / 緊張 +${Math.floor(1 + owned.level / 4)}`,
+        );
+        return { bonusDamage: damage, exp: 9, reason: "攻撃発動" };
+      }, activations, { silent });
+    }
+
+    if (commandConfig.guard || encounter.telegraphPending) {
+      const guardSkillId = getOwnedSkill("player", "life_ward") ? "life_ward" : "ironwall";
+      bonusDamage += tryUseBattleSkill("player", guardSkillId, commandConfig.guard ? 0.24 : 0.1, (owned, def) => {
+        const before = encounter.momentum;
+        encounter.supportGuard = true;
+        encounter.sceneDamageFactor = Math.min(Number(encounter.sceneDamageFactor) || 1, 0.78 - Math.min(0.18, effects.defPct || 0));
+        encounter.momentum = clamp(encounter.momentum + Math.floor(2 + owned.level * 0.55 + (effects.momentumOnGuard || 0) * 0.2), -100, 100);
+        pushMangaPanel(
+          encounter,
+          "support",
+          def.name,
+          `${def.name}が前衛の足元に光を敷き、敵の圧を受け流した。`,
+          `被害軽減 / 戦況 ${formatSceneDelta(encounter.momentum - before)}`,
+        );
+        return { exp: 10, reason: "防御発動" };
+      }, activations, { silent });
+
+      const shadowSkillId = getOwnedSkill("player", "shadow_stitch_dance") ? "shadow_stitch_dance" : "shadow_pin";
+      bonusDamage += tryUseBattleSkill("player", shadowSkillId, encounter.telegraphPending ? 0.18 + (effects.interruptRate || 0) * 0.2 : 0.07, (owned, def) => {
+        const before = encounter.momentum;
+        encounter.sceneDamageFactor = Math.min(Number(encounter.sceneDamageFactor) || 1, 0.84);
+        encounter.momentum = clamp(encounter.momentum + Math.floor(3 + owned.level * 0.65), -100, 100);
+        pushMangaPanel(
+          encounter,
+          "support",
+          def.name,
+          `${encounter.name}の影が一瞬だけ縫い止められ、大技の流れが乱れた。`,
+          `妨害成功 / 戦況 ${formatSceneDelta(encounter.momentum - before)}`,
+        );
+        return { exp: 10, reason: "大技妨害" };
+      }, activations, { silent });
+    }
+
+    const speedSkillId = getOwnedSkill("player", "shadow_runner") ? "shadow_runner" : "flash_step";
+    if (activations.length < 2 && ["attack", "observe"].includes(commandConfig.id)) {
+      bonusDamage += tryUseBattleSkill("player", speedSkillId, 0.09 + (effects.dodgeRate || 0) * 0.12, (owned, def) => {
+        const before = encounter.momentum;
+        encounter.momentum = clamp(encounter.momentum + Math.floor(2 + owned.level * 0.45), -100, 100);
+        encounter.distance = shiftBattleDistance(encounter.distance, "observe");
+        pushMangaPanel(
+          encounter,
+          "hero",
+          def.name,
+          `${getSkillOwnerName("player")}が間合いを滑らせ、敵の視線から外れた。`,
+          `間合い調整 / 戦況 ${formatSceneDelta(encounter.momentum - before)}`,
+        );
+        return { exp: 8, reason: "間合い操作" };
+      }, activations, { silent });
+    }
+
+    if (bonusDamage > 0) {
+      const growthId = getOwnedSkill("player", "magic_core_cycle") ? "magic_core_cycle" : "camp_focus";
+      grantSkillExpToParty(growthId, Math.max(2, Math.floor(bonusDamage / 8)), "スキル追撃", { silent: true });
+    }
+    return bonusDamage;
+  }
+
+  function applyExploreSkillEffects(location, context = {}) {
+    if (!location || context.silent) {
+      return;
+    }
+    const effects = getSkillEffectsForContext("player", { tags: ["explore", "gather", "scout", "trap"], includeAlways: true });
+    const analysisSkillId = getOwnedSkill("player", "starlight_wisdom")
+      ? "starlight_wisdom"
+      : getOwnedSkill("player", "starlight_analysis")
+        ? "starlight_analysis"
+        : "simple_appraisal";
+    if (getOwnedSkill("player", analysisSkillId) && Math.random() < 0.07 + (effects.rareFindRate || 0) + (effects.hiddenRouteRate || 0) * 0.35) {
+      const rewardKey = Math.random() < 0.16 ? "relic" : "gold";
+      const amount = rewardKey === "relic" ? 1 : randomInt(2, 6);
+      addResource(rewardKey, amount);
+      pushExplorePanel(
+        "support",
+        getSkillDef(analysisSkillId).name,
+        `${getSkillOwnerName("player")}が草むらの奥に隠れた魔力反応を捉えた。`,
+        `${RESOURCE_LABELS[rewardKey]} +${amount}`,
+      );
+      addSkillExp("player", analysisSkillId, 9, "探索発見", { silent: true });
+    }
+
+    const trapSkillId = getOwnedSkill("player", "danger_foresight") ? "danger_foresight" : "trap_reading";
+    if (getOwnedSkill("player", trapSkillId) && Math.random() < 0.08 + (effects.trapAvoidRate || 0) * 0.5) {
+      pushExplorePanel(
+        "support",
+        getSkillDef(trapSkillId).name,
+        `${getSkillDef(trapSkillId).name}が発動し、古い魔導罠の起動線を踏む前に気づいた。`,
+        "危険回避 / 探索継続",
+      );
+      addSkillExp("player", trapSkillId, 8, "罠回避", { silent: true });
+    }
+
+    if (getOwnedSkill("player", "herb_scent") && Math.random() < 0.09 + (effects.rareMaterialRate || 0) + (effects.gatherAmountPct || 0) * 0.25) {
+      addResource("herb", 1);
+      pushExplorePanel("support", getSkillDef("herb_scent").name, "風に混じる青い香りを追い、薬草を追加で見つけた。", "薬草 +1");
+      addSkillExp("player", "herb_scent", 7, "薬草発見", { silent: true });
+    }
+
+    grantSkillExpToParty(["simple_appraisal", "trap_reading", "camp_focus"], 2 + Math.floor(location.danger || 0), "探索進行", { silent: true });
+  }
+
+  function grantBattleVictorySkillExp(encounter, location, amount, options = {}) {
+    const base = Math.max(4, Math.floor(amount));
+    grantSkillExpToParty(["blade_basics", "camp_focus", "simple_appraisal", "flash_step"], base, "戦闘勝利", options);
+    if (encounter?.isStrongEnemy) {
+      grantSkillExpToParty(["curse_resistance", "physical_resistance", "simple_appraisal"], base + 4, "強敵撃破", options);
+    }
+    if ((location?.danger || 0) >= 5) {
+      grantSkillExpToParty("physical_resistance", Math.floor(base * 0.7), "高危険度戦闘", { ...options, ignoreBonus: true });
+    }
+  }
+
+  function grantBossSkillExp(boss, options = {}) {
+    const amount = Math.max(18, Math.floor((boss?.power || 100) / 18));
+    grantSkillExpToParty(["magic_core_cycle", "starlight_analysis", "curse_resistance", "pioneer_title"], amount, "ボス討伐", options);
+  }
+
+  function grantCraftSkillExp(amount, reason, options = {}) {
+    const gain = Math.max(3, amount);
+    grantSkillExpToParty(["smith_soul", "market_eye", "camp_focus"], gain, reason, options);
+    if (gain >= 12 || getOwnedSkill("player", "magic_forging_talent")) {
+      grantSkillExpToParty("magic_forging_talent", Math.max(2, Math.floor(gain * 0.45)), reason, options);
+    }
+  }
+
+  function grantBondSkillExp(amount, reason, options = {}) {
+    grantSkillExpToParty(["lovebind_blessing", "healing_light", "prayer_blessing"], Math.max(2, amount), reason, options);
+  }
+
+  function addSkillExp(ownerId, skillId, amount, reason = "", options = {}) {
+    const def = getSkillDef(skillId);
+    if (!def || amount <= 0) {
+      return null;
+    }
+    const bonus = options.ignoreBonus ? 0 : getOwnerSkillExpBonus(ownerId);
+    const alreadyOwned = Boolean(getOwnedSkill(ownerId, def.id));
+    const owned = alreadyOwned
+      ? getOwnedSkill(ownerId, def.id)
+      : grantSkill(ownerId, def.id, reason || "行動経験", { silent: options.silent, level: 1 });
+    if (!owned) {
+      return null;
+    }
+    if (owned.level >= (def.maxLevel || 10) && owned.exp >= getSkillNextExp(def.id, owned.level)) {
+      return owned;
+    }
+
+    const gain = Math.max(1, Math.floor(Number(amount) * (1 + bonus)));
+    owned.exp += gain;
+    ensureSkillState().discovered[def.id] = true;
+    if (gain >= 12 && Math.random() < 0.22) {
+      addSkillLog(`${getSkillOwnerName(ownerId)}の《${def.name}》経験値 +${gain}${reason ? ` / ${reason}` : ""}。`, "exp");
+    }
+    levelUpSkillIfNeeded(ownerId, def.id, options);
+    evolveSkillIfNeeded(ownerId, def.id, options);
+    mergeSkillsIfPossible(ownerId, options);
+    return owned;
+  }
+
   function getRebirthPreview() {
     const heroLevel = state.members[0]?.level || 1;
     const haremLevel = state.haremLevel || 1;
@@ -6177,12 +8623,38 @@
     `;
   }
 
+  function renderMangaPanelList(panels, limit = 6, emptyText = "まだシーンがありません。") {
+    const normalized = normalizeMangaPanels(panels, limit);
+    if (normalized.length === 0) {
+      return `<div class="manga-panel empty"><p>${escapeHtml(emptyText)}</p></div>`;
+    }
+    return normalized.map((panel, index) => {
+      const panelNumber = normalized.length - index;
+      const impact = panel.impact ? `<small>${escapeHtml(panel.impact)}</small>` : "";
+      return `
+        <article class="manga-panel ${escapeAttr(panel.kind)}">
+          <div class="manga-panel-title">◇ ${panelNumber}コマ目：${escapeHtml(panel.title)}</div>
+          <p>${escapeHtml(panel.text)}</p>
+          ${impact}
+        </article>
+      `;
+    }).join("");
+  }
+
   function renderRpgBattlePanel(encounter, options = {}) {
     if (!encounter) {
       return "";
     }
 
+    Object.assign(encounter, normalizeEncounterScene(encounter));
     const hpPercent = clamp((encounter.hp / encounter.maxHp) * 100, 0, 100);
+    const momentumPercent = clamp((encounter.momentum + 100) / 2, 0, 100);
+    const tensionPercent = clamp(encounter.tension, 0, 100);
+    const momentumText = encounter.momentum >= 25
+      ? `こちらが優勢 ${formatSceneDelta(encounter.momentum)}`
+      : encounter.momentum <= -25
+        ? `敵が優勢 ${formatSceneDelta(encounter.momentum)}`
+        : `拮抗 ${formatSceneDelta(encounter.momentum)}`;
     const modeLabel = state.battleMode === "auto" ? "自動ON" : "手動";
     const partyRows = state.members.slice(0, 4).map((member, index) => {
       const job = JOB_BY_ID[member.jobId] || JOB_BY_ID.sword;
@@ -6196,12 +8668,13 @@
       `;
     }).join("");
     const extraMembers = state.members.length > 4 ? `<div class="rpg-party-extra">ほか${state.members.length - 4}人も後衛から支援中</div>` : "";
-    const battleEvents = (encounter.battleLog || [])
-      .map((entry) => `<div class="battle-log-line ${escapeAttr(entry.type || "info")}">${escapeHtml(entry.text)}</div>`)
-      .join("");
+    const panelSource = encounter.panels.length
+      ? encounter.panels
+      : (encounter.battleLog || []).map((entry) => createMangaPanel(entry.type === "enemy" ? "enemy" : entry.type === "player" ? "hero" : "system", "戦闘ログ", entry.text || "", ""));
+    const battlePanels = renderMangaPanelList(panelSource, 6, "戦闘のコマがまだありません。");
 
     return `
-      <div class="battle-card rpg-battle-card active">
+      <div class="battle-card rpg-battle-card manga-battle active">
         <div class="rpg-battle-top">
           <div>
             <div class="card-kicker">${escapeHtml(options.kicker || "RPGバトル")} / ${escapeHtml(modeLabel)}</div>
@@ -6223,18 +8696,45 @@
             ${extraMembers}
           </div>
         </div>
+        <div class="battle-scene-stats">
+          <div class="battle-momentum">
+            <div class="progress-top">
+              <span>戦況ゲージ</span>
+              <strong>${escapeHtml(momentumText)}</strong>
+            </div>
+            <div class="momentum-track" aria-hidden="true"><i style="--value: ${momentumPercent}%"></i></div>
+          </div>
+          <div class="battle-tension">
+            <div class="progress-top">
+              <span>緊張度</span>
+              <strong>${Math.round(tensionPercent)}%</strong>
+            </div>
+            <div class="progress-bar" aria-hidden="true"><i style="--value: ${tensionPercent}%"></i></div>
+          </div>
+          <div class="battle-distance">
+            <span>間合い</span>
+            <strong>${escapeHtml(getDistanceLabel(encounter.distance))}</strong>
+          </div>
+        </div>
+        <div class="battle-telegraph">
+          <span>敵の予兆</span>
+          <strong>${escapeHtml(encounter.telegraph || "敵の動きを見ています。")}</strong>
+        </div>
         <div class="rpg-command-grid">
-          <button type="button" data-action="battle-command" data-command="attack">攻撃</button>
-          <button type="button" data-action="battle-command" data-command="skill">スキル</button>
-          <button type="button" data-action="battle-command" data-command="guard">防御</button>
+          <button type="button" data-action="battle-command" data-command="attack">斬り込む</button>
+          <button type="button" data-action="battle-command" data-command="skill">必殺技</button>
+          <button type="button" data-action="battle-command" data-command="guard">受け流す</button>
+          <button type="button" data-action="battle-command" data-command="observe">観察する</button>
         </div>
         <div class="battle-detail-grid">
+          <span>ターン</span>
+          <strong>${formatNumber(encounter.turn || 0)}</strong>
           <span>味方の行動</span>
           <strong>${formatNumber(encounter.lastPlayerDamage || 0)} ダメージ</strong>
           <span>敵の行動</span>
           <strong>${escapeHtml(encounter.lastEnemyAction || "様子を見ている")}</strong>
         </div>
-        <div class="battle-log-mini">${battleEvents}</div>
+        <div class="manga-panel-list">${battlePanels}</div>
       </div>
     `;
   }
@@ -6348,6 +8848,17 @@
           `;
         })()
       : "";
+    const exploreScenePanel = (state.exploring || travel || (state.explorePanels || []).length > 0)
+      ? `
+        <div class="scene-panel-card">
+          <div class="scene-panel-head">
+            <span>道中シーン</span>
+            <strong>${state.exploring ? "探索中" : travel ? "移動中" : "直近"}</strong>
+          </div>
+          <div class="manga-panel-list explore-scenes">${renderMangaPanelList(state.explorePanels, 5, "探索を始めると道中シーンが流れます。")}</div>
+        </div>
+      `
+      : "";
 
     elements.locationPanel.innerHTML = `
       <div class="panel-title">
@@ -6385,6 +8896,7 @@
             <span class="tag">採取 ${formatNumber(stats.gather)}</span>
             <span class="tag">生産 ${formatNumber(stats.craft)}</span>
           </div>
+          ${exploreScenePanel}
           ${battlePanel}
         </div>
       </div>
@@ -6868,6 +9380,114 @@
   }
 
   function renderSkills() {
+    state.skills = normalizeSkillState(state.skills, state.members);
+    const tierOrder = ["mythic", "awakened", "unique", "personal", "advanced", "basic", "resistance", "title", "blessing"];
+    const renderSkillEffects = (def) => {
+      const labels = {
+        revealTelegraph: "予兆解析",
+        rareFindRate: "レア発見",
+        momentumBonus: "戦況",
+        skillExpBonus: "技能成長",
+        tensionBonus: "緊張",
+        dodgeRate: "回避",
+        speedBonus: "探索速度",
+        damageReduction: "被害軽減",
+        guardMomentum: "防御戦況",
+        lossReduction: "損失軽減",
+        supportRate: "支援率",
+        bonusDamageRate: "追撃率",
+        bonusDamageScale: "追撃威力",
+        interruptRate: "妨害",
+        trapAvoidRate: "罠回避",
+        ambushReduction: "襲撃軽減",
+        herbFindRate: "薬草発見",
+        gatherBonus: "採取",
+        craftBonus: "生産",
+        qualityRate: "品質",
+        poisonReduction: "毒軽減",
+        fireReduction: "炎軽減",
+        controlReduction: "妨害軽減",
+        physicalReduction: "物理軽減",
+        momentumGuard: "戦況保護",
+        curseReduction: "呪い軽減",
+        bondBonus: "親愛",
+      };
+      return Object.entries(def.effects || {})
+        .slice(0, 4)
+        .map(([key, value]) => `<span class="skill-trigger-badge">${escapeHtml(labels[key] || key)} ${typeof value === "number" && value < 1 ? `+${Math.round(value * 100)}%` : `+${formatNumber(value)}`}</span>`)
+        .join("");
+    };
+    const renderOwnedSkillCard = (owned, ownerId = "player") => {
+      const def = getSkillDef(owned.id);
+      if (!def) {
+        return "";
+      }
+      const nextExp = getSkillNextExp(def.id, owned.level);
+      const atMax = owned.level >= (def.maxLevel || 10);
+      const expPercent = atMax ? 100 : clamp((owned.exp / nextExp) * 100, 0, 100);
+      const evolveText = def.evolveTo
+        ? owned.evolvedTo
+          ? `進化済み: ${getSkillDef(owned.evolvedTo)?.name || owned.evolvedTo}`
+          : `進化先: ${getSkillDef(def.evolveTo)?.name || "???"}`
+        : "進化先: まだ不明";
+      return `
+        <article class="skill-card ${escapeAttr(def.tier)}">
+          <div class="skill-card-head">
+            <div>
+              <span class="skill-tier">${escapeHtml(SKILL_TIER_LABELS[def.tier] || def.tier)} / ${escapeHtml(SKILL_CATEGORY_LABELS[def.category] || def.category)}</span>
+              <h3>${escapeHtml(def.name)}</h3>
+            </div>
+            <strong>Lv.${owned.level}${atMax ? " MAX" : ""}</strong>
+          </div>
+          <p>${escapeHtml(def.description)}</p>
+          <div class="skill-exp-bar">
+            <i style="--value: ${expPercent}%"></i>
+          </div>
+          <div class="skill-card-meta">
+            <span>${atMax ? "最大Lv" : `EXP ${formatNumber(owned.exp)} / ${formatNumber(nextExp)}`}</span>
+            <span>${escapeHtml(def.trigger || "自動発動")}</span>
+          </div>
+          <div class="skill-trigger-row">${renderSkillEffects(def)}</div>
+          <div class="skill-evolution-hint">${escapeHtml(evolveText)}</div>
+        </article>
+      `;
+    };
+    const playerSkills = Object.values(state.skills.player.owned || {})
+      .filter((owned) => getSkillDef(owned.id))
+      .sort((a, b) => tierOrder.indexOf(getSkillDef(a.id).tier) - tierOrder.indexOf(getSkillDef(b.id).tier) || a.id.localeCompare(b.id));
+    const playerSkillCards = playerSkills.map((owned) => renderOwnedSkillCard(owned)).join("");
+    const ownedSkillIds = new Set(playerSkills.map((owned) => owned.id));
+    const hiddenSkillCards = SKILL_DEF_LIST.filter((def) => !ownedSkillIds.has(def.id))
+      .slice(0, 8)
+      .map((def) => {
+        const hint = def.evolveTo ? "関連スキルを育てると進化で解放" : def.tier === "resistance" ? "被害を受けると耐性として解放" : "探索・戦闘・クラフトで条件解放";
+        return `
+          <article class="skill-card locked">
+            <span class="skill-tier">${escapeHtml(SKILL_TIER_LABELS[def.tier] || def.tier)}</span>
+            <h3>？？？</h3>
+            <p>${escapeHtml(hint)}</p>
+            <div class="skill-evolution-hint">${escapeHtml(SKILL_CATEGORY_LABELS[def.category] || "未知")}</div>
+          </article>
+        `;
+      }).join("");
+    const companionSkillRows = state.members.filter((member) => member.id !== "hero").slice(0, 8).map((member) => {
+      const owner = ensureSkillOwner(member.id);
+      const skills = Object.values(owner.owned || {}).filter((owned) => getSkillDef(owned.id)).slice(0, 3);
+      const skillTags = skills.map((owned) => {
+        const def = getSkillDef(owned.id);
+        return `<span class="skill-trigger-badge">${escapeHtml(def.name)} Lv.${owned.level}</span>`;
+      }).join("");
+      return `
+        <div class="companion-skill-row">
+          <strong>${escapeHtml(member.name)}</strong>
+          <span>${skillTags || "まだ代表スキルなし"}</span>
+        </div>
+      `;
+    }).join("");
+    const skillLogs = (state.skills.skillLog || []).slice(0, 10).map((entry) => {
+      return `<div class="skill-log-entry ${escapeAttr(entry.kind)}">${escapeHtml(entry.message)}</div>`;
+    }).join("");
+
     const activeAbilityIds = new Set(getActiveAbilities().map((ability) => ability.id));
     const abilityCards = ABILITIES.map((ability) => {
       const active = activeAbilityIds.has(ability.id);
@@ -6933,9 +9553,308 @@
 
     elements.skillPanel.innerHTML = `
       <div class="panel-title">
-        <h2>スキル・セット効果</h2>
-        <small>SP ${state.skillTree.points} / 星核 ${state.resources.starseed || 0}</small>
+        <h2>スキル・覚醒</h2>
+        <small>所持 ${playerSkills.length} / SP ${state.skillTree.points} / 星核 ${state.resources.starseed || 0}</small>
       </div>
+      <div class="skill-board">
+        <section>
+          <h3 class="section-label">主人公の育成スキル</h3>
+          <div class="skill-card-grid">${playerSkillCards || '<p class="empty-log">まだスキルを獲得していません。</p>'}</div>
+        </section>
+        <aside class="skill-side-panel">
+          <h3 class="section-label">仲間の代表スキル</h3>
+          <div class="companion-skill-list">${companionSkillRows || '<p class="empty-log">仲間が増えると表示されます。</p>'}</div>
+          <h3 class="section-label">最近のスキルログ</h3>
+          <div class="skill-log">${skillLogs || '<p class="empty-log">スキルログはまだありません。</p>'}</div>
+        </aside>
+      </div>
+      <h3 class="section-label">未獲得スキルの気配</h3>
+      <div class="skill-card-grid locked-grid">${hiddenSkillCards}</div>
+      <h3 class="section-label">主人公スキルツリー</h3>
+      <div class="skill-tree-grid">${skillTreeCards}</div>
+      <h3 class="section-label">スキル・アビリティ</h3>
+      <div class="ability-grid">${abilityCards}</div>
+      <h3 class="section-label">装備セット効果</h3>
+      <div class="set-grid">${setCards}</div>
+    `;
+  }
+
+  function renderSkills() {
+    state.skills = normalizeSkillState(state.skills, state.members);
+    const rankOrder = [...SKILL_RANK_ORDER].reverse();
+    const domainOrder = Object.keys(SKILL_DOMAIN_LABELS);
+    const rankButtons = ["all", ...SKILL_RANK_ORDER].map((rank) => {
+      const active = selectedSkillRank === rank ? "active" : "";
+      const label = rank === "all" ? "全ランク" : SKILL_RANK_LABELS[rank] || rank;
+      return `<button type="button" class="${active}" data-action="set-skill-rank" data-rank="${escapeAttr(rank)}">${escapeHtml(label)}</button>`;
+    }).join("");
+    const domainButtons = ["all", ...domainOrder].map((domain) => {
+      const active = selectedSkillDomain === domain ? "active" : "";
+      const label = domain === "all" ? "全領域" : SKILL_DOMAIN_LABELS[domain] || domain;
+      return `<button type="button" class="${active}" data-action="set-skill-domain" data-domain="${escapeAttr(domain)}">${escapeHtml(label)}</button>`;
+    }).join("");
+
+    const effectLabels = {
+      atkPct: "攻撃",
+      defPct: "防御",
+      magPct: "魔力",
+      hpPct: "HP",
+      critRate: "会心率",
+      critDamagePct: "会心威力",
+      dodgeRate: "回避",
+      guardRate: "防御成功",
+      counterRate: "反撃",
+      damageFlat: "追加威力",
+      bossDamagePct: "ボス特効",
+      enemyDamageDownPct: "敵火力低下",
+      momentumOnHit: "命中戦況",
+      momentumOnGuard: "防御戦況",
+      tensionGain: "緊張上昇",
+      tensionCostDown: "緊張消費軽減",
+      telegraphRevealRate: "予兆看破",
+      interruptRate: "妨害",
+      autoHealRate: "自動回復率",
+      autoHealPct: "自動回復量",
+      supportTriggerRate: "支援率",
+      comboDamagePct: "連携威力",
+      exploreSpeedPct: "探索速度",
+      scoutPct: "索敵",
+      rareFindRate: "レア発見",
+      hiddenRouteRate: "隠し道",
+      trapAvoidRate: "罠回避",
+      dangerDownPct: "危険低下",
+      gatherAmountPct: "採取量",
+      rareMaterialRate: "希少素材",
+      eventFindRate: "イベント発見",
+      travelSpeedPct: "移動速度",
+      craftSuccessPct: "製作成功",
+      craftQualityPct: "製作品質",
+      upgradeSuccessPct: "強化成功",
+      materialRefundRate: "素材還元",
+      rareCraftRate: "希少製作",
+      alchemyBonusPct: "錬金補正",
+      affectionGainPct: "親愛",
+      heroineSupportRate: "ヒロイン支援",
+      companionExpPct: "仲間経験",
+      familiarExpPct: "使い魔経験",
+      familiarAssistRate: "使い魔支援",
+      giftEffectPct: "贈り物効果",
+      expGainPct: "経験値",
+      jobExpPct: "職業経験",
+      skillExpPct: "スキル経験",
+      goldGainPct: "ゴールド",
+      dropRatePct: "ドロップ",
+      poisonResistPct: "毒耐性",
+      fireResistPct: "炎耐性",
+      iceResistPct: "氷耐性",
+      sleepResistPct: "眠り耐性",
+      curseResistPct: "呪い耐性",
+      physicalResistPct: "物理耐性",
+      magicResistPct: "魔法耐性",
+      debuffResistPct: "弱体耐性",
+    };
+    const effectValue = (key, value) => {
+      if (["damageFlat", "momentumOnHit", "momentumOnGuard", "tensionGain"].includes(key)) {
+        return `+${formatNumber(value)}`;
+      }
+      return `+${Math.round(Number(value) * 100)}%`;
+    };
+    const renderSkillEffects = (def) => Object.entries(def.effects || {})
+      .slice(0, 5)
+      .map(([key, value]) => `<span>${escapeHtml(effectLabels[key] || key)} ${escapeHtml(effectValue(key, value))}</span>`)
+      .join("");
+    const passFilter = (def) => {
+      const rank = getSkillRank(def);
+      const domain = getSkillDomain(def);
+      return (selectedSkillRank === "all" || selectedSkillRank === rank) && (selectedSkillDomain === "all" || selectedSkillDomain === domain);
+    };
+    const sortSkills = (a, b) => {
+      const rankDiff = rankOrder.indexOf(getSkillRank(a)) - rankOrder.indexOf(getSkillRank(b));
+      if (rankDiff !== 0) return rankDiff;
+      return (a.name || a.id).localeCompare(b.name || b.id, "ja");
+    };
+    const renderOwnedSkillCard = (owned, ownerId = "player") => {
+      const def = getSkillDef(owned.id);
+      if (!def) return "";
+      const rank = getSkillRank(def);
+      const domain = getSkillDomain(def);
+      const nextExp = getSkillNextExp(def.id, owned.level);
+      const atMax = owned.level >= (def.maxLevel || 10);
+      const expPercent = atMax ? 100 : clamp((owned.exp / nextExp) * 100, 0, 100);
+      const targets = Array.isArray(def.evolveTo) ? def.evolveTo : def.evolveTo ? [def.evolveTo] : [];
+      const nextName = targets.map((targetId) => getSkillDef(targetId)?.name).find(Boolean);
+      const evolveText = owned.evolvedTo
+        ? `進化済み: ${getSkillDef(owned.evolvedTo)?.name || owned.evolvedTo}`
+        : nextName
+          ? `進化先: ${nextName}`
+          : "進化先: 未確認";
+      const equipped = isSkillEquipped(ownerId, def.id);
+      const alwaysOn = SKILL_ALWAYS_ON_DOMAINS.has(domain);
+      const equipCheck = canEquipSkill(ownerId, def.id);
+      const equipButton = ownerId !== "player"
+        ? ""
+        : alwaysOn
+          ? `<span class="skill-equip-state">常時発動</span>`
+          : equipped
+            ? `<button type="button" class="skill-equip-button" data-action="unequip-skill" data-skill="${escapeAttr(def.id)}">解除</button>`
+            : `<button type="button" class="skill-equip-button" data-action="equip-skill" data-skill="${escapeAttr(def.id)}" ${equipCheck.ok ? "" : "disabled"}>${equipCheck.ok ? "装備" : "満員"}</button>`;
+      return `
+        <article class="skill-card rank-${escapeAttr(rank)} ${equipped ? "equipped" : ""}">
+          <div class="skill-card-head">
+            <div>
+              <div class="skill-badge-row">
+                <span class="skill-rank-badge ${escapeAttr(SKILL_RANKS[rank]?.colorClass || `rank-${rank}`)}">${escapeHtml(SKILL_RANK_LABELS[rank] || rank)}</span>
+                <span class="skill-domain-badge">${escapeHtml(SKILL_DOMAIN_LABELS[domain] || domain)}</span>
+                ${owned.evolved ? '<span class="skill-trigger-badge">進化済み</span>' : ""}
+                ${owned.merged ? '<span class="skill-trigger-badge">統合済み</span>' : ""}
+              </div>
+              <h3>${escapeHtml(def.name)}</h3>
+            </div>
+            <strong>Lv.${owned.level}${atMax ? " MAX" : ""}</strong>
+          </div>
+          <p>${escapeHtml(def.description)}</p>
+          <div class="skill-exp-bar"><span class="skill-exp-fill" style="--value: ${expPercent}%"></span></div>
+          <div class="skill-card-meta">
+            <span>${atMax ? "最大Lv" : `EXP ${formatNumber(owned.exp)} / ${formatNumber(nextExp)}`}</span>
+            <span>${escapeHtml(def.obtain?.hint || "関連行動で成長")}</span>
+          </div>
+          <div class="skill-effect-list">${renderSkillEffects(def)}</div>
+          <div class="skill-evolution-hint">${escapeHtml(evolveText)}</div>
+          <div class="scene-choice-row">${equipButton}</div>
+        </article>
+      `;
+    };
+
+    const playerOwner = ensureSkillOwner("player");
+    const playerSkills = Object.values(playerOwner.owned || {})
+      .map((owned) => ({ owned, def: getSkillDef(owned.id) }))
+      .filter((entry) => entry.def && passFilter(entry.def))
+      .sort((a, b) => sortSkills(a.def, b.def))
+      .map((entry) => entry.owned);
+    const ownedSkillIds = new Set(Object.keys(playerOwner.owned || {}));
+    const playerSkillCards = playerSkills.map((owned) => renderOwnedSkillCard(owned)).join("");
+    const hiddenSkillCards = SKILL_DEF_LIST
+      .filter((def) => !ownedSkillIds.has(def.id) && passFilter(def))
+      .sort(sortSkills)
+      .slice(0, 40)
+      .map((def) => {
+        const rank = getSkillRank(def);
+        const domain = getSkillDomain(def);
+        const conceal = rank === "unique" || rank === "ultimate";
+        const hint = conceal
+          ? `${SKILL_RANK_LABELS[rank] || rank}の条件を満たすと解放`
+          : def.obtain?.hint || "関連行動で解放";
+        return `
+          <article class="skill-card skill-locked rank-${escapeAttr(rank)}">
+            <div class="skill-badge-row">
+              <span class="skill-rank-badge ${escapeAttr(SKILL_RANKS[rank]?.colorClass || `rank-${rank}`)}">${escapeHtml(SKILL_RANK_LABELS[rank] || rank)}</span>
+              <span class="skill-domain-badge">${escapeHtml(SKILL_DOMAIN_LABELS[domain] || domain)}</span>
+            </div>
+            <h3>${conceal ? "？？？" : escapeHtml(def.name)}</h3>
+            <p>${escapeHtml(hint)}</p>
+          </article>
+        `;
+      }).join("");
+    const companionSkillRows = state.members.filter((member) => member.id !== "hero").slice(0, 10).map((member) => {
+      const owner = ensureSkillOwner(member.id);
+      const skills = Object.values(owner.owned || {}).filter((owned) => getSkillDef(owned.id)).slice(0, 4);
+      const skillTags = skills.map((owned) => {
+        const def = getSkillDef(owned.id);
+        return `<span class="skill-trigger-badge">${escapeHtml(def.name)} Lv.${owned.level}</span>`;
+      }).join("");
+      return `
+        <div class="companion-skill-row">
+          <strong>${escapeHtml(member.name)}</strong>
+          <span>${skillTags || "代表スキルなし"}</span>
+        </div>
+      `;
+    }).join("");
+    const equippedSummary = SKILL_RANK_ORDER.map((rank) => {
+      const current = playerOwner.equipped?.[rank]?.length || 0;
+      const limit = SKILL_EQUIP_LIMITS[rank] || 0;
+      return `<span class="skill-trigger-badge">${escapeHtml(SKILL_RANK_LABELS[rank] || rank)} ${current}/${limit}</span>`;
+    }).join("");
+    const skillLogs = (state.skills.skillLog || []).slice(0, 14).map((entry) => `<div class="skill-log-entry ${escapeAttr(entry.kind)}">${escapeHtml(entry.message)}</div>`).join("");
+
+    const activeAbilityIds = new Set(getActiveAbilities().map((ability) => ability.id));
+    const abilityCards = ABILITIES.map((ability) => {
+      const active = activeAbilityIds.has(ability.id);
+      return `
+        <article class="ability-card ${active ? "active" : ""}">
+          <div>
+            <div class="card-kicker">${active ? "発動中" : "未発動"} / ${escapeHtml(ability.hint)}</div>
+            <h3>${escapeHtml(ability.name)}</h3>
+            <p>${escapeHtml(ability.desc)}</p>
+          </div>
+          <div class="stat-chip-row">${renderStatsChips(ability.stats)}</div>
+        </article>
+      `;
+    }).join("");
+    const setEffects = getActiveSetEffects();
+    const equippedRecipeIds = new Set(getAllEquippedItems().map((item) => item.recipeId));
+    const setCards = EQUIPMENT_SETS.map((set) => {
+      const count = set.pieces.filter((recipeId) => equippedRecipeIds.has(recipeId)).length;
+      const activeEffects = setEffects.filter((effect) => effect.set.id === set.id);
+      const active = activeEffects.length > 0;
+      const pieceText = `${count} / ${set.pieces.length}点`;
+      const bonusText = activeEffects.length ? activeEffects.map((effect) => effect.text).join(" / ") : set.bonuses.map((bonus) => bonus.text).join(" / ");
+      return `
+        <article class="set-card ${active ? "active" : ""}">
+          <div>
+            <div class="card-kicker">${active ? "発動中" : "未発動"} / ${escapeHtml(pieceText)}</div>
+            <h3>${escapeHtml(set.name)}</h3>
+            <p>${escapeHtml(set.desc)}</p>
+          </div>
+          <div class="quest-reward">${escapeHtml(bonusText)}</div>
+        </article>
+      `;
+    }).join("");
+    state.skillTree = normalizeSkillTree(state.skillTree);
+    const skillTreeCards = SKILL_TREE_NODES.map((node) => {
+      const unlocked = Boolean(state.skillTree.unlocked[node.id]);
+      const missingPrereq = (node.requires || []).some((requiredId) => !state.skillTree.unlocked[requiredId]);
+      const affordable = state.skillTree.points >= (node.cost?.points || 0) && (state.resources.starseed || 0) >= (node.cost?.starseed || 0);
+      const canUnlock = !unlocked && !missingPrereq && affordable;
+      const costText = `SP${node.cost?.points || 0}${node.cost?.starseed ? ` / 星核${node.cost.starseed}` : ""}`;
+      const status = unlocked ? "解放済み" : missingPrereq ? "前提不足" : affordable ? "解放可能" : `不足: ${costText}`;
+      return `
+        <article class="skill-node-card ${unlocked ? "active" : ""} ${missingPrereq ? "locked" : ""}">
+          <div>
+            <div class="card-kicker">${escapeHtml(node.branch)} / ${escapeHtml(status)}</div>
+            <h3>${escapeHtml(node.name)}</h3>
+            <p>${escapeHtml(node.desc)}</p>
+          </div>
+          <div class="stat-chip-row">${renderStatsChips(node.stats)}</div>
+          <div class="quest-reward">費用: ${escapeHtml(costText)}</div>
+          <button type="button" data-action="unlock-skill" data-skill="${escapeAttr(node.id)}" ${canUnlock ? "" : "disabled"}>${unlocked ? "解放済み" : "スキル解放"}</button>
+        </article>
+      `;
+    }).join("");
+
+    elements.skillPanel.innerHTML = `
+      <div class="panel-title">
+        <h2>スキル・覚醒</h2>
+        <small>定義 ${SKILL_DEF_LIST.length} / 所持 ${Object.keys(playerOwner.owned || {}).length} / SP ${state.skillTree.points}</small>
+      </div>
+      <div class="skill-toolbar">
+        <div class="skill-filter-row">${rankButtons}</div>
+        <div class="skill-filter-row domain-row">${domainButtons}</div>
+        <div class="skill-equip-summary">${equippedSummary}</div>
+      </div>
+      <div class="skill-board">
+        <section>
+          <h3 class="section-label">主人公の所持スキル</h3>
+          <div class="skill-grid">${playerSkillCards || '<p class="empty-log">この条件の所持スキルはまだありません。</p>'}</div>
+        </section>
+        <aside class="skill-side-panel">
+          <h3 class="section-label">仲間の代表スキル</h3>
+          <div class="companion-skill-list">${companionSkillRows || '<p class="empty-log">仲間が増えると表示されます。</p>'}</div>
+          <h3 class="section-label">最近のスキルログ</h3>
+          <div class="skill-log skill-log-panel">${skillLogs || '<p class="empty-log">スキルログはまだありません。</p>'}</div>
+        </aside>
+      </div>
+      <h3 class="section-label">未所持スキルの手がかり</h3>
+      <div class="skill-grid locked-grid">${hiddenSkillCards || '<p class="empty-log">この条件の未所持スキルはありません。</p>'}</div>
       <h3 class="section-label">主人公スキルツリー</h3>
       <div class="skill-tree-grid">${skillTreeCards}</div>
       <h3 class="section-label">スキル・アビリティ</h3>

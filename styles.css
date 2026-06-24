@@ -1160,6 +1160,322 @@ select {
   opacity: 0.72;
 }
 
+.skill-board {
+  display: grid;
+  grid-template-columns: minmax(320px, 1fr) minmax(240px, 0.42fr);
+  gap: 12px;
+  align-items: start;
+  margin-bottom: 14px;
+}
+
+.skill-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.skill-card {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--line-strong);
+  border-radius: 8px;
+  background: #1a1612;
+  padding: 11px;
+}
+
+.skill-card.basic { border-left-color: #c5a46b; }
+.skill-card.advanced { border-left-color: var(--blue); }
+.skill-card.personal { border-left-color: var(--violet); }
+.skill-card.unique { border-left-color: var(--gold); }
+.skill-card.awakened { border-left-color: #e8cf82; background: linear-gradient(135deg, rgba(215, 167, 77, 0.12), transparent 52%), #1d1912; }
+.skill-card.mythic { border-left-color: #f0a0c6; background: linear-gradient(135deg, rgba(166, 138, 212, 0.14), transparent 52%), #1d1720; }
+.skill-card.resistance { border-left-color: var(--green); }
+.skill-card.title { border-left-color: #e7bd6a; }
+.skill-card.blessing { border-left-color: #d68fb0; }
+.skill-card.locked {
+  opacity: 0.74;
+  border-left-style: dashed;
+  background: #17130f;
+}
+
+.skill-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.skill-card h3,
+.skill-card p {
+  margin: 0;
+}
+
+.skill-card h3 {
+  color: var(--paper);
+  font-size: 0.96rem;
+}
+
+.skill-card p {
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.skill-card-head strong {
+  flex: 0 0 auto;
+  color: #f0d28a;
+  font-size: 0.8rem;
+}
+
+.skill-tier {
+  display: inline-block;
+  margin-bottom: 4px;
+  color: var(--rose);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.skill-exp-bar {
+  height: 9px;
+  overflow: hidden;
+  border: 1px solid #4b3e2e;
+  border-radius: 999px;
+  background: #0f0c09;
+}
+
+.skill-exp-bar i {
+  display: block;
+  width: var(--value, 0%);
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--violet), var(--blue), var(--gold));
+}
+
+.skill-card-meta,
+.skill-evolution-hint {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.skill-evolution-hint {
+  display: block;
+  color: #f0d28a;
+}
+
+.skill-trigger-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.skill-trigger-badge {
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 999px;
+  padding: 2px 7px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.035);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.skill-side-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.companion-skill-list,
+.skill-log {
+  display: grid;
+  gap: 7px;
+}
+
+.companion-skill-row,
+.skill-log-entry {
+  display: grid;
+  gap: 5px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #18140f;
+  padding: 8px 9px;
+}
+
+.companion-skill-row strong {
+  color: var(--paper);
+  font-size: 0.82rem;
+}
+
+.companion-skill-row span {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.skill-log-entry {
+  border-left: 3px solid var(--line-strong);
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+
+.skill-log-entry.unlock,
+.skill-log-entry.evolve,
+.skill-log-entry.merge {
+  border-left-color: var(--gold);
+  color: #f0d28a;
+}
+
+.skill-log-entry.level {
+  border-left-color: var(--green);
+  color: #cfe8d3;
+}
+
+.skill-toolbar {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #17130f;
+}
+
+.skill-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.skill-filter-row button {
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+}
+
+.skill-filter-row button.active {
+  border-color: rgba(240, 210, 138, 0.65);
+  color: var(--paper);
+  background: rgba(240, 210, 138, 0.14);
+}
+
+.skill-equip-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.skill-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.skill-card.rank-common { border-left-color: #c5a46b; }
+.skill-card.rank-extra { border-left-color: var(--blue); }
+.skill-card.rank-unique { border-left-color: var(--gold); background: linear-gradient(135deg, rgba(232, 207, 130, 0.09), transparent 48%), #1a1612; }
+.skill-card.rank-ultimate { border-left-color: #f0a0c6; background: linear-gradient(135deg, rgba(166, 138, 212, 0.14), transparent 50%), #1d1720; }
+
+.skill-card.equipped {
+  box-shadow: inset 0 0 0 1px rgba(240, 210, 138, 0.24);
+}
+
+.skill-locked {
+  opacity: 0.74;
+  border-left-style: dashed;
+}
+
+.skill-badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.skill-rank-badge,
+.skill-domain-badge,
+.skill-equip-state {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 999px;
+  padding: 1px 7px;
+  font-size: 0.66rem;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.skill-rank-badge.rank-common { color: #f0d28a; background: rgba(197, 164, 107, 0.12); }
+.skill-rank-badge.rank-extra { color: #b8dcff; background: rgba(98, 157, 207, 0.13); }
+.skill-rank-badge.rank-unique { color: #ffe1a1; background: rgba(240, 210, 138, 0.16); }
+.skill-rank-badge.rank-ultimate { color: #ffd2ea; background: rgba(240, 160, 198, 0.16); }
+
+.skill-domain-badge {
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.skill-exp-fill {
+  display: block;
+  width: var(--value, 0%);
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--violet), var(--blue), var(--gold));
+}
+
+.skill-effect-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.skill-effect-list span {
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 999px;
+  padding: 2px 7px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.035);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.skill-equip-button {
+  min-height: 30px;
+  padding: 0 10px;
+  font-size: 0.74rem;
+}
+
+.skill-equip-state {
+  width: fit-content;
+  color: #cfe8d3;
+  border-color: rgba(108, 174, 124, 0.35);
+  background: rgba(108, 174, 124, 0.11);
+}
+
+.skill-log-panel {
+  max-height: 360px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.skill-log-entry.equip {
+  border-left-color: var(--blue);
+  color: #cce2f6;
+}
+
+.skill-log-entry.awaken {
+  border-left-color: #f0a0c6;
+  color: #ffd2ea;
+}
+
 .expedition-card.locked,
 .guild-request-card.locked,
 .codex-card.locked,
@@ -1328,7 +1644,7 @@ select {
 
 .rpg-command-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -1394,6 +1710,208 @@ select {
 .battle-log-line.guard {
   border-left-color: var(--blue);
   color: #cbe2ee;
+}
+
+.manga-battle {
+  position: relative;
+  overflow: hidden;
+}
+
+.manga-battle::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 22px 22px;
+  opacity: 0.24;
+}
+
+.manga-battle > * {
+  position: relative;
+}
+
+.battle-scene-stats {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) minmax(130px, 0.8fr) minmax(96px, 0.52fr);
+  gap: 8px;
+}
+
+.battle-momentum,
+.battle-tension,
+.battle-distance,
+.battle-telegraph,
+.scene-panel-card {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  background: rgba(15, 12, 9, 0.5);
+  padding: 9px;
+}
+
+.battle-momentum,
+.battle-tension {
+  display: grid;
+  gap: 6px;
+}
+
+.momentum-track {
+  position: relative;
+  height: 9px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(199, 109, 95, 0.42), rgba(255, 255, 255, 0.08) 50%, rgba(105, 183, 122, 0.42));
+}
+
+.momentum-track::after {
+  content: "";
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  left: 50%;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.38);
+}
+
+.momentum-track i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--value) - 2px);
+  width: 4px;
+  border-radius: 999px;
+  background: #fff1bf;
+  box-shadow: 0 0 10px rgba(240, 210, 138, 0.8);
+}
+
+.battle-distance {
+  display: grid;
+  gap: 3px;
+  align-content: center;
+}
+
+.battle-distance span,
+.battle-telegraph span,
+.scene-panel-head span {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.battle-distance strong {
+  color: var(--paper);
+  font-size: 0.92rem;
+}
+
+.battle-telegraph {
+  display: grid;
+  gap: 5px;
+  border-color: rgba(199, 109, 95, 0.28);
+  background:
+    linear-gradient(135deg, rgba(199, 109, 95, 0.1), transparent 52%),
+    rgba(15, 12, 9, 0.58);
+}
+
+.battle-telegraph strong {
+  color: #f0cbc6;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.manga-panel-list {
+  display: grid;
+  gap: 7px;
+}
+
+.manga-panel {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-left: 4px solid var(--line-strong);
+  border-radius: 7px;
+  background: #211b15;
+  padding: 8px 9px;
+}
+
+.manga-panel.hero {
+  border-left-color: var(--green);
+  background:
+    linear-gradient(135deg, rgba(105, 183, 122, 0.12), transparent 54%),
+    #1b2118;
+}
+
+.manga-panel.enemy {
+  border-left-color: var(--red);
+  background:
+    linear-gradient(135deg, rgba(199, 109, 95, 0.13), transparent 54%),
+    #211714;
+}
+
+.manga-panel.support {
+  border-left-color: var(--blue);
+  background:
+    linear-gradient(135deg, rgba(103, 169, 201, 0.12), transparent 54%),
+    #171c20;
+}
+
+.manga-panel.system {
+  border-left-color: var(--gold);
+}
+
+.manga-panel.empty {
+  border-left-color: var(--line-strong);
+  opacity: 0.78;
+}
+
+.manga-panel-title {
+  color: var(--paper);
+  font-size: 0.82rem;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+.manga-panel p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.manga-panel small {
+  color: #f0d28a;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.scene-panel-card {
+  display: grid;
+  gap: 8px;
+}
+
+.scene-panel-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+
+.scene-panel-head strong {
+  color: var(--paper);
+  font-size: 0.78rem;
+}
+
+.scene-choice-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.explore-scenes .manga-panel {
+  padding-block: 7px;
 }
 
 .craft-layout {
@@ -2685,7 +3203,9 @@ select {
   .right-column,
   .base-summary,
   .craft-layout,
+  .skill-board,
   .rpg-battle-stage,
+  .battle-scene-stats,
   .location-layout,
   .story-layout {
     grid-template-columns: 1fr;
@@ -2700,6 +3220,8 @@ select {
   .ability-grid,
   .set-grid,
   .facility-grid,
+  .skill-card-grid,
+  .skill-grid,
   .skill-tree-grid,
   .expedition-grid,
   .guild-grid,
@@ -2747,6 +3269,8 @@ select {
   .set-grid,
   .facility-grid,
   .rebirth-grid,
+  .skill-card-grid,
+  .skill-grid,
   .skill-tree-grid,
   .expedition-grid,
   .guild-grid,
@@ -2775,6 +3299,7 @@ select {
   .inventory-actions,
   .shop-actions,
   .shop-stock-actions,
+  .scene-choice-row,
   .daily-card,
   .roster-tools,
   .hero-name-row {

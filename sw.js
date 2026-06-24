@@ -1,8 +1,9 @@
-const CACHE_NAME = "starlight-rpg-v22";
+const CACHE_NAME = "starlight-rpg-v25";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
+  "./skills-data.js",
   "./app.js",
   "./firebase-config.js",
   "./manifest.webmanifest",
